@@ -257,8 +257,9 @@
 	    const type modifier const-ptr variable array)))
 
 (defun format-type-value (const type modifier const-ptr variable array value)
-  (format nil "~A = ~A" (format-type const type modifier const-ptr variable array)
-	  (compile-form< value)))
+  (let ((cvalue (compile-form< value)))
+    (format nil "~A~:[~; = '~A'~]" (format-type const type modifier const-ptr variable array)
+	    (not (null cvalue)) value)))
 
 (defun compile-type-value< (desc &optional no-text)
   (let ((l (cdr (last desc)))
@@ -313,8 +314,10 @@
 (assert (string= (compile-type< '(|const| |long| * |const| |x| [])) "const long * const x []") nil "const long * const x []")
 
 (defun compile-atom< (obj)
-  (cond ((null obj) "NULL")
+  (cond ((null obj) nil)
+	((eq '|nil| obj) "NULL")
 	((numberp obj) (format nil "~A" obj))
+	((characterp obj) (format nil "~S" obj))
 	((stringp obj) (format nil "~S" obj))
 	((and (symbolp obj) (is-symbol obj))
 	 (cond ((eq obj '|#t|) "true")
