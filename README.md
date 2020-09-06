@@ -155,7 +155,7 @@ lcc supports declaration and definition of all ANCI C data types.
 ```lisp
 (variable int width)
 (variable int height . 5)
-(variable char letter . 'A')
+(variable char letter . #\A)
 (variable float age)
 (variable float area)
 (variable double d)
@@ -165,8 +165,8 @@ lcc supports declaration and definition of all ANCI C data types.
 (set age 26.5)
 ```
 ```c
-int    width, height=5;
-char   letter='A';
+int    width, height = 5;
+char   letter = 'A';
 float  age, area;
 double d;
 
@@ -232,7 +232,7 @@ main ()
 {
   {
     float a;
-    a = (float) 15/6;
+    a = (float) 15 / 6;
     printf("%f", a);
   }
 }
