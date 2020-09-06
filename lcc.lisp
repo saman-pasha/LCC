@@ -2,7 +2,7 @@
 (defvar *output* t)
 
 (defvar *unary* '(+ - ++ |++#| -- |--#| ~ ! |not| * |contentof| & |addressof|))
-(defvar *operators* '(+ - * / % == != > < >= <= ^ << >> && |and| \|\| |or| & |bitand| \| |bitor| |->| $))
+(defvar *operators* '(+ - * / % == != > < >= <= ^ |xor| << >> && |and| |or| & |bitand| |bitor| |->| $))
 (defvar *assignments* '(= += -= *= /= %= <<= >>=))
 
 (defvar *modifiers* '(& * **))
@@ -384,6 +384,8 @@
 	  (cond ((listp func) (error (format nil "function name or operator is missing ~A" form)))
 		((eq func '|code|)   (format nil "~A" (cadr form)))
 		((eq func 'QUOTE)    (format nil "{~{~A~^, ~}}" (mapcar #'compile-form< (cadr form))))
+		((and (> (length form) 2) (eq func '\|) (eq (cadr form) '\|)) (compile-operator< (push '\|\| (cddr form))))
+		((and (> (length form) 2) (eq func '\|)) (compile-operator< form))
 		((and (= (length form) 2) (find func *unary*))     (compile-unary< form))
 		((and (> (length form) 2) (find func *operators*)) (compile-operator< form))
 		((eq func '|nth|)    (compile-nth-form< form)) 
@@ -758,4 +760,9 @@
       (cond ((eq name '|target|) (compile-target target))
 	    (t (error (format nil "target is missing for ~A" name)))))))
 
-(compile-lcc-file (read-file (second *posix-argv*)))
+(let ((rt (copy-readtable nil)))
+  (multiple-value-bind (function non-terminating-p)
+    (get-macro-character #\| rt)
+    (set-macro-character #\| nil nil)
+    (compile-lcc-file (read-file (second *posix-argv*)))
+    (set-macro-character #\| function non-terminating-p)))
