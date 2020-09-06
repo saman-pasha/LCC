@@ -237,3 +237,69 @@ main ()
   }
 }
 ```
+## Program Structure
+lcc program involves one or many target clause.
+targets are translating it's content clauses to C code.
+each target must has a target c file, and a list of feature arguments.
+### Features
+* <b>:std</b>: writes standard libraries inclusion at top of target file.
+```lisp
+(target "main.c"
+  (:std)
+  ;; some clauses
+  )
+```
+```c
+#include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
+```
+### Sections
+* Documentations: starts with semi-colon(s) ";"
+```lisp
+;;; about a lisp file
+;;;; author, licence and/or documentation about each target
+(variable long height) ; description of a clause
+(function sqr ((double a)) 
+  (returns double)
+  ;; some commented code or documentation inside code
+  (return (* a a)))
+```
+* Preprocessor Clauses: a clause which starts with at-sign "@"
+```lisp
+(@define (code "SHA1_ROTL(bits, word) (((word) << (bits)) | ((word) >> (32-(bits)))"))
+
+(struct SHA512Context
+  (@ifdef USE_32BIT_ONLY)
+  (member uint32_t Intermediate_Hash[(/ SHA512HashSize 4)]) ; Message Digest
+  (member uint32_t Length[4])                               ; Message length in bits
+  (@else)                                                   ; !USE_32BIT_ONLY
+  (member uint64_t Intermediate_Hash[(/ SHA512HashSize 8)]) ; Message Digest
+  (member uint64_t Length_High)
+  (member uint64_t Length_Low)                              ; Message length in bits
+  (@endif)                                                  ; USE_32BIT_ONLY
+  (member int_least16_t Message_Block_Index)                ; Message_Block array index
+  (member uint8_t Message_Block[SHA512_Message_Block_Size]) ; 1024-bit message blocks
+  (member int Computed)                                     ; Is the hash computed?
+  (member int Corrupted))                                   ; Cumulative corruption code
+```
+```c
+typedef struct SHA512Context {
+#ifdef USE_32BIT_ONLY
+  uint32_t Intermediate_Hash [(SHA512HashSize / 4)];
+  uint32_t Length [4];
+#else
+  uint64_t Intermediate_Hash [(SHA512HashSize / 8)];
+  uint64_t Length_High;
+  uint64_t Length_Low;
+#endif
+  int_least16_t Message_Block_Index;
+  uint8_t Message_Block [SHA512_Message_Block_Size];
+  int Computed;
+  int Corrupted;
+} SHA512Context;
+```
+* Main Function: The main function is where program execution begins. Every lcc program must contain only one main function.
+## Decision Making
