@@ -71,6 +71,7 @@ lcc Operator | C Operator
 
 void main()
 {
+  {
     int a = 5, b = 5;
     
     //Print them and decrementing each time.
@@ -81,5 +82,64 @@ void main()
     printf("\n%d %d", a--, --b);
     printf("\n%d %d", a--, --b);
     printf("\n%d %d", a--, --b);
+  }
 }
 ```
+### Relational
+lcc Operator | C Operator
+------------ | ----------
+`==`|`==`
+`!=`|`!=`
+`>`|`>`
+`<`|`<`
+`>=`|`>=`
+`<=`|`<=`
+### Logical
+lcc Operator | C Operator
+------------ | ----------
+`and`|`&&`
+`&&`|`&&`
+`or`|`\|\|`
+`\|\|`|`\|\|`
+`not`|`!`
+`!`|`!`
+### Bitwise
+lcc Operator | C Operator
+------------ | ----------
+`<<`|`<<`
+`>>`|`>>`
+`~`|`~`
+`bitand`|`&`
+`&`|`&`
+`xor`|`^`
+`^`|`^`
+`bitor`|`\|`
+`\|`|`\|`
+### Assignment
+lcc Operator | C Operator
+------------ | ----------
+`=`|`=`
+`+=`|`+=`
+`-=`|`-=`
+`*=`|`*=`
+`/=`|`/=`
+`%=`|`%=`
+`<<=`|`<<=`
+`>>=`|`>>=`
+### Conditional
+lcc Operator | C Operator
+------------ | ----------
+`?`|`?=`
+```lisp
+(set a (? (== b 2) 20 30))
+```
+```c
+a = (b == 2) ? 20 : 30;
+```
+### Special
+lcc Operator | C Operator
+------------ | ----------
+`sizeof`|`sizeof()`
+`addressof`|`&`
+`contentof`|`*`
+
