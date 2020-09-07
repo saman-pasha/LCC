@@ -265,15 +265,15 @@ main ()
 }
 ```
 ## Program Structure
-lcc program involves one or many target clause.
-targets are translating it's content clauses to C code.
+lcc program involves one or many target form.
+targets are translating it's content forms to C code.
 each target must has a target c file, and a list of feature arguments.
 ### Features
 * <b>:std</b>: writes standard libraries inclusion at top of target file.
 ```lisp
 (target "main.c"
   (:std)
-  ;; some clauses
+  ;; some forms
   )
 ```
 ```c
@@ -288,13 +288,13 @@ each target must has a target c file, and a list of feature arguments.
 ```lisp
 ;;; about a lisp file
 ;;;; author, licence and/or documentation about each target
-(variable long height) ; description of a clause
+(variable long height) ; description of a form
 (function sqr ((double a)) 
   (returns double)
   ;; some commented code or documentation inside code
   (return (* a a)))
 ```
-* Preprocessor Clauses: a clause which starts with at-sign "@" and accepts one argument. code clause is used for writing C code inside lcc.
+* Preprocessor Forms: a form which starts with at-sign "@" and accepts one argument. code form is used for writing C code inside lcc.
 ```lisp
 (@define (code "SHA1_ROTL(bits, word) (((word) << (bits)) | ((word) >> (32-(bits)))"))
 
@@ -333,7 +333,7 @@ typedef struct SHA512Context {
 * Main Function: The main function is where program execution begins. Every lcc program must contain only one main function.
 ## Decision Making
 ### if
-If clause accepts 2 or 3 argument. condition, clause for true evaluation of condition and clause for false evaluation. third part(else) could be omitted. use progn clause if you need more clauses in each part.
+If form accepts 2 or 3 argument. condition, form for true evaluation of condition and form for false evaluation. third part(else) could be omitted. use progn form if you need more forms in each part.
 ```lisp
 (let ((int a . 5)
       (int b . 6))
