@@ -45,6 +45,7 @@
    (1 . cast)
    (1 . switch)
    (1 . case)
+   (1 . default)
    (1 . for)
    (1 . new)
    (1 . print)

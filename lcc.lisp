@@ -314,8 +314,6 @@
 (assert (string= (compile-type< '(|const| |long| * |const| |x| [])) "const long * const x []") nil "const long * const x []")
 
 (defun compile-atom< (obj)
-  (print obj)
-  (print (characterp obj))
   (cond ((null obj) nil)
 	((eq '|nil| obj) "NULL")
 	((numberp obj) (format nil "~A" obj))
@@ -435,7 +433,20 @@
       (format *output* "~&~A} else {~%" (indent lvl))
       (compile-body (list (nth 3 form)) (+ lvl 1))
       (format *output* "~&~A}~%" (indent lvl)))))
-      
+
+(defun compile-switch-form (form lvl)
+  (when (< (length form) 2) (error (format nil "wrong switch form ~A" form)))
+  (format *output* "~&~Aswitch (~A) {~%" (indent lvl) (compile-form< (nth 1 form)))
+  (dolist (ch-form (nthcdr 2 form))
+    (cond ((eq (car ch-form) '|case|)
+	   (format *output* "~&~Acase ~A:~%" (indent (+ lvl 1)) (compile-form< (cadr ch-form)))
+	   (compile-body (nthcdr 2 ch-form) (+ lvl 2)))
+	  ((eq (car ch-form) '|default|)
+	   (format *output* "~&~Adefault:~%" (indent (+ lvl 1)))
+	   (compile-body (nthcdr 1 ch-form) (+ lvl 2)))
+	  (t (error (format nil "only case or default form ~A" form)))))
+  (format *output* "~&~A}~%" (indent lvl)))
+
 (defun compile-while-form (form lvl)
   (when (< (length form) 2) (error (format nil "wrong while form ~A" form)))
   (format *output* "~&~Awhile (~A) {~%" (indent lvl) (compile-form< (nth 1 form)))
@@ -497,6 +508,7 @@
 		     ((eq func '|set|)      (compile-set-form    form lvl))
 		     ((eq func '|progn|)    (compile-progn-form  form lvl)) 
 		     ((eq func '|if|)       (compile-if-form     form lvl)) 
+		     ((eq func '|switch|)   (compile-switch-form form lvl)) 
 		     ((eq func '|while|)    (compile-while-form  form lvl)) 
 		     ((eq func '|let|)      (compile-let-form    form lvl)) 
 		     ((eq func '|for|)      (compile-for-form    form lvl)) 
