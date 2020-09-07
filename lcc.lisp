@@ -258,8 +258,8 @@
 
 (defun format-type-value (const type modifier const-ptr variable array value)
   (let ((cvalue (compile-form< value)))
-    (format nil "~A~:[~; = '~A'~]" (format-type const type modifier const-ptr variable array)
-	    (not (null cvalue)) value)))
+    (format nil "~A~:[~; = ~A~]" (format-type const type modifier const-ptr variable array)
+	    (not (null cvalue)) cvalue)))
 
 (defun compile-type-value< (desc &optional no-text)
   (let ((l (cdr (last desc)))
@@ -314,10 +314,12 @@
 (assert (string= (compile-type< '(|const| |long| * |const| |x| [])) "const long * const x []") nil "const long * const x []")
 
 (defun compile-atom< (obj)
+  (print obj)
+  (print (characterp obj))
   (cond ((null obj) nil)
 	((eq '|nil| obj) "NULL")
 	((numberp obj) (format nil "~A" obj))
-	((characterp obj) (format nil "~S" obj))
+	((characterp obj) (format nil "'~C'" obj))
 	((stringp obj) (format nil "~S" obj))
 	((and (symbolp obj) (is-symbol obj))
 	 (cond ((eq obj '|#t|) "true")
@@ -347,11 +349,12 @@
 	  ((eq opr '|or|)     (setq opr '|\|\||))
 	  ((eq opr '|bitand|) (setq opr '|&|))
 	  ((eq opr '|bitor|)  (setq opr '|\||))
+	  ((eq opr '|xor|)    (setq opr '|^|))
 	  ((eq opr '|$|)      (setq opr '|.|)))
     (dolist (oprnd (cdr form))
       (push opr oprnds)
       (push (compile-form< oprnd) oprnds))
-    (if (eq opr '|->|)
+    (if (or (eq opr '|->|) (eq opr '|.|))
 	(format nil "~{~A~^~A~}" (cdr (nreverse oprnds)))
       (format nil "(~{~A~^ ~A ~})" (cdr (nreverse oprnds))))))
 
@@ -424,7 +427,7 @@
 
 (defun compile-if-form (form lvl)
   (when (or (< (length form) 3) (> (length form) 4)) (error (format nil "wrong if form ~A" form)))
-  (format *output* "~&~Aif (~A) {~%" (indent lvl) (compile-form< (nth 1 form)))
+  (format *output* "~&~Aif ~A {~%" (indent lvl) (compile-form< (nth 1 form)))
   (compile-body (list (nth 2 form)) (+ lvl 1))
   (if (= (length form) 3)
       (format *output* "~&~A}~%" (indent lvl))
