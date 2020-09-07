@@ -267,7 +267,7 @@ each target must has a target c file, and a list of feature arguments.
   ;; some commented code or documentation inside code
   (return (* a a)))
 ```
-* Preprocessor Clauses: a clause which starts with at-sign "@"
+* Preprocessor Clauses: a clause which starts with at-sign "@" and accepts one argument. code clause is used for writing C code inside lcc.
 ```lisp
 (@define (code "SHA1_ROTL(bits, word) (((word) << (bits)) | ((word) >> (32-(bits)))"))
 
@@ -286,6 +286,8 @@ each target must has a target c file, and a list of feature arguments.
   (member int Corrupted))                                   ; Cumulative corruption code
 ```
 ```c
+#define SHA1_ROTL(bits, word) (((word) << (bits)) | ((word) >> (32-(bits)))
+
 typedef struct SHA512Context {
 #ifdef USE_32BIT_ONLY
   uint32_t Intermediate_Hash [(SHA512HashSize / 4)];
@@ -303,3 +305,46 @@ typedef struct SHA512Context {
 ```
 * Main Function: The main function is where program execution begins. Every lcc program must contain only one main function.
 ## Decision Making
+### if
+If clause accepts 2 or 3 argument. condition, clause for true evaluation of condition and clause for false evaluation. third part(else) could be omitted. use progn clause if you need more clauses in each part.
+```lisp
+(let ((int a . 5)
+      (int b . 6))
+  (if (> a b)
+     (printf "a is greater")
+    (printf "maybe b is greater")))
+```
+```c
+{
+  int a = 5;
+  int b = 6;
+  if (a > b)
+    (printf "a is greater");
+  else
+    (printf "maybe b is greater");
+}
+```
+```lisp
+(let ((int a . 5)
+      (int b . 6))
+  (if (> a b)
+     (progn
+       (printf "a is greater")
+       (set a (* a b)))
+    (progn
+      (printf "maybe b is greater")
+      (set b (* b a)))))
+```
+```c
+{
+  int a = 5;
+  int b = 6;
+  if (a > b) {
+    (printf "a is greater");
+    a = a * b;
+  } else {
+    (printf "maybe b is greater");
+    b = b * a;
+  }
+}
+```
