@@ -468,3 +468,66 @@ for (int n = 1, int times = 5; (n <= times);) {
   printf("lcc for loops: %dn", n);
 }
 ```
+## Function
+lcc has some points on functions:
+* Use returns form for setting the return type. returns form must be first form of a function after arguments list. A fucntion without returns form will returns void instead of main which returns int.
+* Function's attributes must set in declaration time. each attribute enclosed in braces "{attribute}".
+    * {declare}    
+    * {static}
+    * {inline}
+    * {extern}
+* Each declared function defined a function pointer typedef named FunctionName_t.
+```lisp
+(target "main.c"
+  (:std)
+  
+  ;; function declaration
+  {declare} (function addition ((int * a) (int * b)) (returns int))
+  
+  (function main ()
+    ;; local variable definition
+    (let ((int answer)
+          (int num1 . 10)
+          (int num2 . 5))
+      
+      ;; calling a function to get addition value
+      (set answer (addition (addressof num1) (addressof num2)))
+      (printf "The addition of two numbers is: %d\n" answer))
+    (return 0))
+  
+  ;; function returning the addition of two numbers
+  (function addition ((int * a) (int * b))
+    (returns int)
+    (return (+ (contentof a) (contentof b)))))
+```
+```c
+#include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
+
+/* function declaration */
+int addition(int *num1, int *num2);
+
+int main()
+{
+  {
+    /* local variable definition */    
+    int answer;
+    int num1 = 10;
+    int num2 = 5;
+    
+    /* calling a function to get addition value */    
+    answer = addition(&num1, &num2);
+    printf("The addition of two numbers is: %d\n", answer);
+  }
+  return 0;
+}
+
+/* function returning the addition of two numbers */
+int addition(int *a,int *b)
+{
+    return *a + *b;
+}
+```
