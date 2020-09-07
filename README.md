@@ -395,7 +395,7 @@ If form accepts 2 or 3 argument. condition, form for true evaluation of conditio
   printf("Please enter a number between 1 and 5: ");
   scanf("%d", &a);
     
-  switch(a) {
+  switch (a) {
     case 1:
       printf("You chose One");
       break;
@@ -415,5 +415,56 @@ If form accepts 2 or 3 argument. condition, form for true evaluation of conditio
       printf("Invalid Choice");
       break;
   }
+}
+```
+## Loops
+### while
+```lisp
+(let ((int n . 1)
+      (int times . 5))
+  (while (<= n times)
+    (printf "lcc while loops: %d\n" n)
+    (++# n)))
+```
+```c
+{
+  int n = 1, times = 5;
+
+  while (n <= times) {
+      printf("C while loops: %d\n", n);
+      n++;
+  }
+}
+```
+### do
+```lisp
+(let ((int n . 1)
+      (int times . 5))
+  (do (<= n times)
+    (printf "lcc do loops: %d\n" n)
+    (++# n)))
+```
+```c
+{
+  int n = 1, times = 5;
+
+  do {
+      printf("C do loops: %d\n", n);
+      n++;
+  } while (n <= times)
+}
+```
+### for
+```lisp
+(for ((int n . 1)
+      (int times . 5))
+  (<= n times)
+  (++# n)
+  (printf "lcc for loops: %d\n" n))
+```
+```c
+for (int n = 1, int times = 5; (n <= times);) {
+  n++;
+  printf("lcc for loops: %dn", n);
 }
 ```
