@@ -319,9 +319,9 @@ If clause accepts 2 or 3 argument. condition, clause for true evaluation of cond
   int a = 5;
   int b = 6;
   if (a > b)
-    (printf "a is greater");
+    printf("a is greater");
   else
-    (printf "maybe b is greater");
+    printf("maybe b is greater");
 }
 ```
 ```lisp
@@ -340,11 +340,53 @@ If clause accepts 2 or 3 argument. condition, clause for true evaluation of cond
   int a = 5;
   int b = 6;
   if (a > b) {
-    (printf "a is greater");
+    printf("a is greater");
     a = a * b;
   } else {
-    (printf "maybe b is greater");
+    printf("maybe b is greater");
     b = b * a;
+  }
+}
+```
+### switch
+```lisp
+(let ((int a))
+  (printf "Please enter a no between 1 and 5: ")
+  (scanf "%d" (addressof a))
+  
+  (switch a
+    (case 1 (printf "You chose One")   (break))
+    (case 2 (printf "You chose Two")   (break))
+    (case 3 (printf "You chose Three") (break))
+    (case 4 (printf "You chose Four")  (break))
+    (case 5 (printf "You chose Five")  (break))
+    (default (printf "Invalid Choice."))))
+```
+```c
+{
+  int a;
+  printf("Please enter a no between 1 and 5: ");
+  scanf("%d", &a);
+    
+  switch(a) {
+    case 1:
+      printf("You chose One");
+      break;
+    case 2:
+      printf("You chose Two");
+      break;
+    case 3:
+      printf("You chose Three");
+      break;
+    case 4:
+      printf("You chose Four");
+      break;
+    case 5:
+      printf("You chose Five.");
+      break;
+    default:
+      printf("Invalid Choice");
+      break;
   }
 }
 ```
