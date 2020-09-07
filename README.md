@@ -118,6 +118,7 @@ lcc Operator | C Operator
 ### Assignment
 lcc Operator | C Operator
 ------------ | ----------
+`set`|`=`
 `=`|`=`
 `+=`|`+=`
 `-=`|`-=`
