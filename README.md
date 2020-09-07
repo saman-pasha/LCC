@@ -44,10 +44,10 @@ total = total + amount;
 ### Increment and Decrement
 lcc Operator | C Operator
 ------------ | ----------
-`++`|`++`
-`--`|`--`
-`++#`|`++`
-`--#`|`--`
+`++`|prefix `++`
+`--`|prefix `--`
+`++#`|postfix `++`
+`--#`|postfix `--`
 ```lisp
 (target "main.c" 
   ()
