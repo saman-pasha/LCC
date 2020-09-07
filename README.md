@@ -150,6 +150,32 @@ ANSI C provides three types of data types:
 * User Defined Data Types: Structure, Union, and Enumeration.
 
 lcc supports declaration and definition of all ANCI C data types.
+lcc Data Type | C Data Type
+------------- | -----------
+`void`|`void`
+`char`|`char`
+`uchar`|`unsigned char`
+`short`|`short`
+`ushort`|`unsigned short`
+`int`|`int`
+`uint`|`unsigned int`
+`long`|`long`
+`ulong`|`unsigned long`
+`llong`|`long long`
+`ullong`|`unsigned long long`
+`i8`|`int8_t`
+`u8`|`uint8_t`
+`i16`|`int16_t`
+`u16`|`uint16_t`
+`i32`|`int32_t`
+`u32`|`uint32_t`
+`i64`|`int64_t`
+`u64`|`uint64_t`
+`i128`|`__int128`
+`u128`|`unsigned __int128`
+`float`|`float`
+`double`|`double`
+`real`|`long double`
 ## Variable
 ### Free Variable Declaration and Initialization
 ```lisp
@@ -351,7 +377,7 @@ If clause accepts 2 or 3 argument. condition, clause for true evaluation of cond
 ### switch
 ```lisp
 (let ((int a))
-  (printf "Please enter a no between 1 and 5: ")
+  (printf "Please enter a number between 1 and 5: ")
   (scanf "%d" (addressof a))
   
   (switch a
@@ -365,7 +391,7 @@ If clause accepts 2 or 3 argument. condition, clause for true evaluation of cond
 ```c
 {
   int a;
-  printf("Please enter a no between 1 and 5: ");
+  printf("Please enter a number between 1 and 5: ");
   scanf("%d", &a);
     
   switch(a) {
