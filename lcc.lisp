@@ -314,8 +314,6 @@
 (assert (string= (compile-type< '(|const| |long| * |const| |x| [])) "const long * const x []") nil "const long * const x []")
 
 (defun compile-atom< (obj)
-  (print obj)
-  (print (characterp obj))
   (cond ((null obj) nil)
 	((eq '|nil| obj) "NULL")
 	((numberp obj) (format nil "~A" obj))
