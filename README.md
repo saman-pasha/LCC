@@ -179,38 +179,49 @@ lcc Data Type | C Data Type
 `real`|`long double`
 ## Variable
 ### Free Variable Declaration and Initialization
+A free variable can has some attributes or storage class. each attribute enclosed in braces "{attribute}".
+* {auto}
+* {register}
+* {static}
+* {extern}
 ```lisp
-(variable int width)
-(variable int height . 5)
+{auto} (variable int width)
+{register} (variable int height . 5)
 (variable char letter . #\A)
 (variable float age)
-(variable float area)
-(variable double d)
+{extern} (variable float area)
+{static} (variable double d)
 
 ;; actual initialization
 (set width 10)
 (set age 26.5)
 ```
 ```c
-int    width, height = 5;
+auto int width; 
+register height = 5;
 char   letter = 'A';
-float  age, area;
-double d;
+float  age;
+extern float area;
+static double d;
 
 /* actual initialization */
 width = 10;
 age = 26.5;
 ```
 ### Scoped Variable Declaration and Initialization
+A scoped variable can has some attributes or storage class. each attribute enclosed in braces "{attribute}".
+* {auto}
+* {register}
+* {static}
 ```lisp
-(let ((int width . 3)
-      (int height . 4))
+(let ({static} (int width . 3)
+      {register} (int height . 4))
   (printf "area: %d" (* width height)))
 ```
 ```c
 {
-  int width = 3;
-  int height = 4;
+  static int width = 3;
+  register int height = 4;
   printf("area: %d", width * height);
 }
 ```
