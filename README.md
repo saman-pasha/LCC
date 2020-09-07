@@ -317,10 +317,10 @@ each target must has a target c file, and a list of feature arguments.
 
 typedef struct SHA512Context {
 #ifdef USE_32BIT_ONLY
-  uint32_t Intermediate_Hash [(SHA512HashSize / 4)];
+  uint32_t Intermediate_Hash [SHA512HashSize / 4];
   uint32_t Length [4];
 #else
-  uint64_t Intermediate_Hash [(SHA512HashSize / 8)];
+  uint64_t Intermediate_Hash [SHA512HashSize / 8];
   uint64_t Length_High;
   uint64_t Length_Low;
 #endif
