@@ -60,11 +60,11 @@ lcc Operator | C Operator
       ;; Print them and decrementing each time.
       ;; Use postfix mode for a and prefix mode for b.
       
-      (printf "\n%d %d" (++# a) (-- b))
-      (printf "\n%d %d" (++# a) (-- b))
-      (printf "\n%d %d" (++# a) (-- b))
-      (printf "\n%d %d" (++# a) (-- b))
-      (printf "\n%d %d" (++# a) (-- b)))))
+      (printf "\n%d %d" (--# a) (-- b))
+      (printf "\n%d %d" (--# a) (-- b))
+      (printf "\n%d %d" (--# a) (-- b))
+      (printf "\n%d %d" (--# a) (-- b))
+      (printf "\n%d %d" (--# a) (-- b)))))
 ```
 ```c
 #include <stdio.h>
