@@ -44,10 +44,10 @@ total = total + amount;
 ### Increment and Decrement
 lcc Operator | C Operator
 ------------ | ----------
-`++`|`++`
-`--`|`--`
-`++#`|`++`
-`--#`|`--`
+`++`|prefix `++`
+`--`|prefix `--`
+`++#`|postfix `++`
+`--#`|postfix `--`
 ```lisp
 (target "main.c" 
   ()
@@ -60,11 +60,11 @@ lcc Operator | C Operator
       ;; Print them and decrementing each time.
       ;; Use postfix mode for a and prefix mode for b.
       
-      (printf "\n%d %d" (++# a) (-- b))
-      (printf "\n%d %d" (++# a) (-- b))
-      (printf "\n%d %d" (++# a) (-- b))
-      (printf "\n%d %d" (++# a) (-- b))
-      (printf "\n%d %d" (++# a) (-- b)))))
+      (printf "\n%d %d" (--# a) (-- b))
+      (printf "\n%d %d" (--# a) (-- b))
+      (printf "\n%d %d" (--# a) (-- b))
+      (printf "\n%d %d" (--# a) (-- b))
+      (printf "\n%d %d" (--# a) (-- b)))))
 ```
 ```c
 #include <stdio.h>
@@ -118,6 +118,7 @@ lcc Operator | C Operator
 ### Assignment
 lcc Operator | C Operator
 ------------ | ----------
+`set`|`=`
 `=`|`=`
 `+=`|`+=`
 `-=`|`-=`
@@ -150,6 +151,32 @@ ANSI C provides three types of data types:
 * User Defined Data Types: Structure, Union, and Enumeration.
 
 lcc supports declaration and definition of all ANCI C data types.
+lcc Data Type | C Data Type
+------------- | -----------
+`void`|`void`
+`char`|`char`
+`uchar`|`unsigned char`
+`short`|`short`
+`ushort`|`unsigned short`
+`int`|`int`
+`uint`|`unsigned int`
+`long`|`long`
+`ulong`|`unsigned long`
+`llong`|`long long`
+`ullong`|`unsigned long long`
+`i8`|`int8_t`
+`u8`|`uint8_t`
+`i16`|`int16_t`
+`u16`|`uint16_t`
+`i32`|`int32_t`
+`u32`|`uint32_t`
+`i64`|`int64_t`
+`u64`|`uint64_t`
+`i128`|`__int128`
+`u128`|`unsigned __int128`
+`float`|`float`
+`double`|`double`
+`real`|`long double`
 ## Variable
 ### Free Variable Declaration and Initialization
 ```lisp
@@ -238,15 +265,15 @@ main ()
 }
 ```
 ## Program Structure
-lcc program involves one or many target clause.
-targets are translating it's content clauses to C code.
+lcc program involves one or many target form.
+targets are translating it's content forms to C code.
 each target must has a target c file, and a list of feature arguments.
 ### Features
 * <b>:std</b>: writes standard libraries inclusion at top of target file.
 ```lisp
 (target "main.c"
   (:std)
-  ;; some clauses
+  ;; some forms
   )
 ```
 ```c
@@ -261,13 +288,13 @@ each target must has a target c file, and a list of feature arguments.
 ```lisp
 ;;; about a lisp file
 ;;;; author, licence and/or documentation about each target
-(variable long height) ; description of a clause
+(variable long height) ; description of a form
 (function sqr ((double a)) 
   (returns double)
   ;; some commented code or documentation inside code
   (return (* a a)))
 ```
-* Preprocessor Clauses: a clause which starts with at-sign "@" and accepts one argument. code clause is used for writing C code inside lcc.
+* Preprocessor Forms: a form which starts with at-sign "@" and accepts one argument. code form is used for writing C code inside lcc.
 ```lisp
 (@define (code "SHA1_ROTL(bits, word) (((word) << (bits)) | ((word) >> (32-(bits)))"))
 
@@ -290,10 +317,10 @@ each target must has a target c file, and a list of feature arguments.
 
 typedef struct SHA512Context {
 #ifdef USE_32BIT_ONLY
-  uint32_t Intermediate_Hash [(SHA512HashSize / 4)];
+  uint32_t Intermediate_Hash [SHA512HashSize / 4];
   uint32_t Length [4];
 #else
-  uint64_t Intermediate_Hash [(SHA512HashSize / 8)];
+  uint64_t Intermediate_Hash [SHA512HashSize / 8];
   uint64_t Length_High;
   uint64_t Length_Low;
 #endif
@@ -306,7 +333,7 @@ typedef struct SHA512Context {
 * Main Function: The main function is where program execution begins. Every lcc program must contain only one main function.
 ## Decision Making
 ### if
-If clause accepts 2 or 3 argument. condition, clause for true evaluation of condition and clause for false evaluation. third part(else) could be omitted. use progn clause if you need more clauses in each part.
+If form accepts 2 or 3 argument. condition, form for true evaluation of condition and form for false evaluation. third part(else) could be omitted. use progn form if you need more forms in each part.
 ```lisp
 (let ((int a . 5)
       (int b . 6))
@@ -351,7 +378,7 @@ If clause accepts 2 or 3 argument. condition, clause for true evaluation of cond
 ### switch
 ```lisp
 (let ((int a))
-  (printf "Please enter a no between 1 and 5: ")
+  (printf "Please enter a number between 1 and 5: ")
   (scanf "%d" (addressof a))
   
   (switch a
@@ -365,7 +392,7 @@ If clause accepts 2 or 3 argument. condition, clause for true evaluation of cond
 ```c
 {
   int a;
-  printf("Please enter a no between 1 and 5: ");
+  printf("Please enter a number between 1 and 5: ");
   scanf("%d", &a);
     
   switch(a) {
