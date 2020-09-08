@@ -586,8 +586,8 @@ char name[6] = {'C', 'l', 'o', 'u', 'd', '\0'};
 char name[]  = "Cloud";
 char * name  = "Cloud";
 ```
-lcc Special Characters
-----------------------
+### Special Characters
+`#\Null`
 `#\Space`
 `#\Newline`
 `#\Tab`
