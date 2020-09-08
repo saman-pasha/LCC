@@ -179,7 +179,7 @@ lcc Data Type | C Data Type
 `real`|`long double`
 ## Variable
 ### Free Variable Declaration and Initialization
-A free variable can has some attributes or storage class. each attribute enclosed in braces "{attribute}".
+A free variable can has some attributes or storage class. each attribute enclosed in braces or parentheses "{attribute}".
 * {auto}
 * {register}
 * {static}
@@ -209,7 +209,7 @@ width = 10;
 age = 26.5;
 ```
 ### Scoped Variable Declaration and Initialization
-A scoped variable can has some attributes or storage class. each attribute enclosed in braces "{attribute}".
+A scoped variable can has some attributes or storage class. each attribute enclosed in braces or parentheses "{attribute}".
 * {auto}
 * {register}
 * {static}
@@ -482,7 +482,7 @@ for (int n = 1, int times = 5; (n <= times);) {
 ## Function
 lcc has some points on functions:
 * Use returns form for setting the return type. returns form must be first form of a function after arguments list. A fucntion without returns form will returns void instead of main which returns int.
-* Function's attributes must set in declaration time. each attribute enclosed in braces "{attribute}".
+* Function's attributes must set in declaration time. each attribute enclosed in braces or parentheses "{attribute}".
     * {declare}    
     * {static}
     * {inline}
