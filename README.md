@@ -577,7 +577,7 @@ for(int n = 0; n < sizeof(myArray) / sizeof(int); n++)
 ```
 ## String
 ```lisp
-(variable char name [6] . '{#\C #\l #\o #\u #\d nil})
+(variable char name [6] . '{#\C #\l #\o #\u #\d #\Null})
 (variable char name []  . "Cloud")
 (variable char * name   . "Cloud")
 ```
