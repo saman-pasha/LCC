@@ -542,3 +542,103 @@ int addition(int *a,int *b)
     return *a + *b;
 }
 ```
+## Array
+### Define
+```lisp
+(variable double amount [5])
+```
+```c
+double amount[5];
+```
+### Initialize 
+```lisp
+(variable int ages [5] . '{22 23 24 25 26})
+```
+```c
+int ages[5] = {22 23 24 25 26};
+```
+```lisp
+(variable int myArray [5])
+
+;; Initializing elements of array seperately
+(for ((int n . 0))
+  (< n (/ (sizeof myArray) (sizeof int)))
+  (++# n)
+  (set (nth n myArray) n))
+```
+```c
+int myArray[5];
+
+// Initializing elements of array seperately
+for(int n = 0; n < sizeof(myArray) / sizeof(int); n++)
+{
+  myArray[n] = n;
+}
+```
+## String
+```lisp
+(variable char name [6] . '{#\C #\l #\o #\u #\d #\Null})
+(variable char name []  . "Cloud")
+(variable char * name   . "Cloud")
+```
+```c
+char name[6] = {'C', 'l', 'o', 'u', 'd', '\0'};
+char name[]  = "Cloud";
+char * name  = "Cloud";
+```
+### Special Characters
+`#\Null`
+`#\Space`
+`#\Newline`
+`#\Tab`
+`#\Page`
+`#\Rubout`
+`#\Linefeed`
+`#\Return`
+`#\Backspace`
+## Pointer
+```lisp
+(variable int * width)
+(variable int * letter)
+```
+```c
+int  *width;
+char *letter;
+```
+```lisp
+(target "main.c"
+  ()
+  (include <stdio.h>)
+  
+  (function main ((int argc) (char * argv []))
+    (let ((int n . 20)   ;; actual and pointer variable declaration
+          (int * pntr))  ;; store address of n in pointer variable
+      (set pntr (addressof n))
+      (printf "Address of n variable: %x\n" (addressof n))
+      
+      ;; address stored in pointer variable
+      (printf "Address stored in pntr variable: %x\n" pntr)
+
+      ;; access the value using the pointer
+      (printf "Value of *pntr variable: %d\n" (contentof pntr)))
+    (return 0))
+```
+```c
+#include<stdio.h>
+
+int main (int argc, char *argv[])
+{
+  {
+    int n = 20, *pntr;  /* actual and pointer variable declaration */
+    pntr = &n;          /* store address of n in pointer variable  */
+    printf("Address of n variable: %x\n", &n);
+
+    /* address stored in pointer variable */   
+    printf("Address stored in pntr variable: %x\n", pntr);
+
+    /* access the value using the pointer */   
+    printf("Value of *pntr variable: %d\n", *pntr);
+  }
+  return 0;
+}
+```
