@@ -178,6 +178,18 @@ lcc Data Type | C Data Type
 `double`|`double`
 `real`|`long double`
 ## Variable
+```lisp
+(let ((double price . 500.4)                         ; atom initialization
+      (double price_array [] . '{100.2 230.7 924.8}) ; list initialization
+      (double price_calc . #'(calculate_price))))    ; initialization by output of a function
+```
+```c
+{
+  double price = 500.4;
+  double price_array [] = {100.2, 230.7, 924.8};
+  double price_calc = calculate_price();
+}
+```
 ### Free Variable Declaration and Initialization
 A free variable can has some attributes or storage class. each attribute enclosed in braces or parentheses.
 * {auto}
@@ -480,7 +492,7 @@ for (int n = 1, int times = 5; (n <= times);) {
 }
 ```
 ### for-each
-Static array
+Static array:
 ```lisp
 (let ((int [] ages . '{20 22 24 26}))
   (for-each (int i) ages (/ (sizeof ages) (sizeof int))
@@ -495,7 +507,7 @@ Static array
   }
 }
 ```
-Dynamic array
+Dynamic array:
 ```lisp
 (function main ((int argc) (char ** argv))
   (for-each (char * arg) argv argc
@@ -642,9 +654,9 @@ char *letter;
   (include <stdio.h>)
   
   (function main ((int argc) (char * argv []))
-    (let ((int n . 20)   ;; actual and pointer variable declaration
-          (int * pntr))  ;; store address of n in pointer variable
-      (set pntr (addressof n))
+    (let ((int n . 20)
+          (int * pntr))        ; actual and pointer variable declaration
+      (set pntr (addressof n)) ; store address of n in pointer variable
       (printf "Address of n variable: %x\n" (addressof n))
       
       ;; address stored in pointer variable
@@ -671,5 +683,45 @@ int main (int argc, char *argv[])
     printf("Value of *pntr variable: %d\n", *pntr);
   }
   return 0;
+}
+```
+## Dynamic Memory Allocation
+C dynamic memory allocation functions `malloc()`, `calloc()`, `realloc()`, `free()` are available. Other keyword `new` that works in `let` initialization part which automatically checking pointer and freeing allocated memory at the end of let scope.
+```lisp
+(let ((char * mem_alloc . #'(malloc (* 15 (sizeof char))))) ; memory allocated dynamically
+  (if (== mem_alloc nil) (printf "Couldn't able to allocate requested memory\n"))
+  (free mem_alloc))
+```
+```c
+{    
+  char *mem_alloc = malloc(15 * sizeof(char)); /* memory allocated dynamically */
+  if (mem_alloc == NULL) printf("Couldn't able to allocate requested memory\n");
+  free(mem_alloc);
+}
+```
+Allocation with `new` and equivalent code in C:
+```lisp
+(let ((char * safe_alloc . #'(new (* 15 (sizeof char)))))
+  (printf "Memory allocated safely\n"))
+```
+```c
+{    
+  char *safe_alloc = malloc(15 * sizeof(char)); 
+  if (safe_alloc == NULL) printf("dynamic memory allocation failed! safe_alloc\n");
+  printf("Memory allocated safely\n");
+  free(safe_alloc);
+}
+```
+Allocation by `new` and equivalent `calloc`:
+```lisp
+(let ((char * safe_alloc . #'(new 15 (sizeof char))))
+  (printf "Memory allocated safely\n"))
+```
+```c
+{    
+  char *safe_alloc = calloc(15, sizeof(char)); 
+  if (safe_alloc == NULL) printf("dynamic memory allocation failed! safe_alloc\n");
+  printf("Memory allocated safely\n");
+  free(safe_alloc);
 }
 ```
