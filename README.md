@@ -1,5 +1,10 @@
 # lcc
-Lisp C Compiler, Lisp-like syntax for writing C code and some pointer managements.
+Lisp C Compiler, Lisp-like syntax for writing C code in addition of some forms and pointer managements.
+## Instruction
+* Install [SBCL](www.sbcl.org).
+* Write your own lcc code and save in lisp or lcc extension.
+* Send your file as an argument to lcc.lisp. `sbcl --script lcc.lisp test.lisp`
+* If you are using EMACS editor, copy mode.lisp file content into .emacs file for syntax highlighting.
 ## Identifiers
 ```lisp
 (variable int amount)
