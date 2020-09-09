@@ -1,5 +1,5 @@
 # lcc
-Lisp C Compiler, Lisp-like syntax for writing C code and some pointer managements
+Lisp C Compiler, Lisp-like syntax for writing C code and some pointer managements.
 ## Identifiers
 ```lisp
 (variable int amount)
@@ -179,7 +179,7 @@ lcc Data Type | C Data Type
 `real`|`long double`
 ## Variable
 ### Free Variable Declaration and Initialization
-A free variable can has some attributes or storage class. each attribute enclosed in braces or parentheses "{attribute}".
+A free variable can has some attributes or storage class. each attribute enclosed in braces or parentheses.
 * {auto}
 * {register}
 * {static}
@@ -209,7 +209,7 @@ width = 10;
 age = 26.5;
 ```
 ### Scoped Variable Declaration and Initialization
-A scoped variable can has some attributes or storage class. each attribute enclosed in braces or parentheses "{attribute}".
+A scoped variable can has some attributes or storage class. each attribute enclosed in braces or parentheses.
 * {auto}
 * {register}
 * {static}
@@ -479,10 +479,41 @@ for (int n = 1, int times = 5; (n <= times);) {
   printf("lcc for loops: %dn", n);
 }
 ```
+### for-each
+Static array
+```lisp
+(let ((int [] ages . '{20 22 24 26}))
+  (for-each (int i) ages (/ (sizeof ages) (sizeof int))
+    (printf "each age: %d\n" i)))
+```
+```c
+{
+  int ages[] = {20, 22, 24, 26};
+  for (int G4321 = 0; G4321 < sizeof(ages) / sizeof(int); G4321++) {
+    int i = ages[G4321];
+    printf("each age: %d\n", i);
+  }
+}
+```
+Dynamic array
+```lisp
+(function main ((int argc) (char ** argv))
+  (for-each (char * arg) argv argc
+    (printf "%s\n" arg)))
+```
+```c
+int main (int argc, char ** argv) 
+{
+  for (int G4321 = 0; G4321 < argc; G4321++) {
+    char * arg = argv[G4321];
+    printf("%s\n", arg);
+  }
+}
+```
 ## Function
 lcc has some points on functions:
 * Use returns form for setting the return type. returns form must be first form of a function after arguments list. A fucntion without returns form will returns void instead of main which returns int.
-* Function's attributes must set in declaration time. each attribute enclosed in braces or parentheses "{attribute}".
+* Function's attributes must set in declaration time. each attribute enclosed in braces or parentheses.
     * {declare}    
     * {static}
     * {inline}
