@@ -686,7 +686,7 @@ int main (int argc, char *argv[])
 }
 ```
 ## Dynamic Memory Allocation
-C dynamic memory allocation functions `malloc()`, `calloc()`, `realloc()`, `free()` are available and other keyword `new` that works in `let` initialization part and automatically freeing allocated memory at the end of let scope.
+C dynamic memory allocation functions `malloc()`, `calloc()`, `realloc()`, `free()` are available. Other keyword `new` that works in `let` initialization part which automatically checking pointer and freeing allocated memory at the end of let scope.
 ```lisp
 (let ((char * mem_alloc . #'(malloc (* 15 (sizeof char))))) ; memory allocated dynamically
   (if (== mem_alloc nil) (printf "Couldn't able to allocate requested memory\n"))
