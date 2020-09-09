@@ -686,11 +686,9 @@
 		    ((eq construct '|enum|)     (compile-enum     clause attributes (+ lvl 1)) (setq attributes '()))
 		    ((eq construct '|struct|)   (compile-struct   clause attributes (+ lvl 1)) (setq attributes '()))
 		    ((eq construct '|union|)    (compile-union    clause attributes (+ lvl 1)) (setq attributes '()))
-		    ((eq construct '|declares|) (push (nth 1 clause) declares))
+		    ((eq construct '|declares|) (setq declares (append declares (nthcdr 1 clause))))
 		    (t (error (format nil "unknown clause ~A in struct ~A" construct name)))))
 	  (error (format nil "syntax error ~A" clause))))
-      (when (and (not is-anonymous) (> (length declares) 0))
-	(error (format nil "declares must be inside anonymous struct ~A" name)))
       (format *output* "~&~A}~:[ ~A~;~]~:[ ~;~]" (indent lvl) is-anonymous name (null declares))
       (format *output* "~{~A~^, ~};~%" declares))))
 

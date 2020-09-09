@@ -38,17 +38,20 @@
    (1 . or)
    (1 . bitand)
    (1 . bitor)
+   (1 . xor)
    (1 . contentof)
    (1 . addressof)
    (1 . sizeof)
-   ;;(1 . ?)
    (1 . cast)
    (1 . switch)
    (1 . case)
    (1 . default)
+   (1 . while)
    (1 . for)
+   (1 . for-each)
    (1 . new)
-   (1 . print)
+   (1 . printf)
+   (1 . scanf)
    ))
 
 (defun lcc-add-attributes (face-name keyword-rules)
@@ -72,6 +75,8 @@
    (1 . declare)
    (1 . inline)
    (1 . extern)
+   (1 . register)
+   (1 . auto)
    ))
 
 (defun lcc-add-types (face-name keyword-rules)
@@ -131,8 +136,6 @@
    (1 . int_fast64_t)
    (1 . uint_fast64_t)
    (1 . __int128)
-   (1 . i128)
-   (1 . u128)
    (1 . i8)
    (1 . u8)
    (1 . i16)
@@ -141,14 +144,14 @@
    (1 . u32)
    (1 . i64)
    (1 . u64)
+   (1 . i128)
+   (1 . u128)
    (1 . intmax_t)
    (1 . intptr_t)
    (1 . bool)
    (1 . true)
    (1 . false)
    (1 . nil)
-   ;;(1 . #t)
-   ;;(1 . #f)
    ))
 
 (font-lock-add-keywords
@@ -160,11 +163,6 @@
  'lisp-mode
  '(("(guard[ \t\n]+\\(\\(\\sw\\|\\s_\\)+\\)[ \t\n]*"
     (1 'font-lock-preprocessor-face))))
-
-;; (font-lock-add-keywords
-;;  'lisp-mode
-;;  '(("(include\\(\\([ \t\n]+\\(<\\(\\(\\sw\\|\\s_\\|\\.\\)+\\)>\\)+\\)+\\)"
-;;     (1 'font-lock-string-face))))
 
 (font-lock-add-keywords
  'lisp-mode
@@ -185,13 +183,3 @@
  'lisp-mode
  '(("(union[ \t\n]+\\(\\(\\sw\\|\\s_\\)+\\)[ \t\n]*"
     (1 'font-lock-type-face))))
-
-;; (font-lock-add-keywords
-;;  'lisp-mode
-;;  '(("\\(\\$\\(.\\|\\n\\)*?[^\\]\\$\\)"
-;;     (1 'font-lock-warning-face))))
-
-;; (font-lock-add-keywords
-;;  'lisp-mode
-;;  '(("\\(\\$\\(.\\|\n\\)*?[^\\]\\$\\)"
-;;     (1 'font-lock-warning-face))))

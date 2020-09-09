@@ -154,6 +154,7 @@ lcc supports declaration and definition of all ANCI C data types.
 lcc Data Type | C Data Type
 ------------- | -----------
 `void`|`void`
+`bool`|`bool`
 `char`|`char`
 `uchar`|`unsigned char`
 `short`|`short`
@@ -686,7 +687,7 @@ int main (int argc, char *argv[])
 }
 ```
 ## Dynamic Memory Allocation
-C dynamic memory allocation functions `malloc()`, `calloc()`, `realloc()`, `free()` are available. Other keyword `new` that works in `let` initialization part which automatically checking pointer and freeing allocated memory at the end of let scope.
+C dynamic memory allocation functions `malloc()`, `calloc()`, `realloc()`, `free()` are available. Other keyword `new` that works in `let` initialization part which automatically is checking pointer and freeing allocated memory at the end of let scope.
 ```lisp
 (let ((char * mem_alloc . #'(malloc (* 15 (sizeof char))))) ; memory allocated dynamically
   (if (== mem_alloc nil) (printf "Couldn't able to allocate requested memory\n"))
@@ -725,3 +726,94 @@ Allocation by `new` and equivalent `calloc`:
   free(safe_alloc);
 }
 ```
+## Structure
+`declares` form is declaring one or more variable(s) at the end of struct declaration.
+```lisp
+(struct Course
+  (member char WebSite [50])
+  (member char Subject [50])
+  (member int  Price))
+```
+```c
+typedef struct Course
+{
+  char  WebSite[50];
+  char  Subject[50];
+  int   Price;
+} Course;
+```
+## Union
+`declares` form is declaring one or more variable(s) at the end of union declaration.
+```lisp
+(struct USHAContext
+  (member int whichSha)                 ; which SHA is being used
+  (union
+    (member SHA1Context   sha1Context)
+    (member SHA224Context sha224Context) 
+    (member SHA256Context sha256Context)
+    (member SHA384Context sha384Context) 
+    (member SHA512Context sha512Context)
+    (declares ctx)))
+```
+```c
+typedef struct USHAContext {
+  int whichSha;
+  union {
+    SHA1Context sha1Context;
+    SHA224Context sha224Context;
+    SHA256Context sha256Context;
+    SHA384Context sha384Context;
+    SHA512Context sha512Context;
+  } ctx;
+} USHAContext;
+```
+## Enum
+```lisp
+(enum
+  (shaSuccess . 0)
+  (shaNull)            ; Null pointer parameter
+  (shaInputTooLong)    ; input data too long
+  (shaStateError)      ; called Input after FinalBits or Result
+  (shaBadParam))       ; passed a bad parameter
+```
+```c
+enum {
+  shaSuccess = 0,
+  shaNull,
+  shaInputTooLong,
+  shaStateError,
+  shaBadParam
+};
+```
+## Guard
+```lisp
+(guard __STUDENT_H__
+  (struct Student
+    (member char name [50])
+    (member char family [50])
+    (member int  class_no)))
+```
+```c
+#ifndef __STUDENT_H__
+#define __STUDENT_H__
+typedef struct Student {
+  char name [50];
+  char family [50];
+  int class_no;
+} Student;
+#endif /* __STUDENT_H__ */ 
+```
+## Typedef
+```lisp
+(typedef int * intptr_t)
+```
+```c
+typedef int * intptr_t;
+```
+## C++ Compiler
+C++ compiler could be used instead of C compiler then some features availables:
+* `&` modifier in function argument for pass by reference.
+* Default value for members of structs.
+* `method` form for defining a member function inside of structs.
+
+# Good Luck!
