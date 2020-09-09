@@ -475,7 +475,7 @@
   (let ((counter (gensym)))
     (format *output* "~&~Afor (int ~A = 0; ~A < ~A; ~A++) {~%" (indent lvl)
 	    counter counter (compile-form< (nth 3 form)) counter)
-    (format *output* "~&~A~A = ~A;~%" (indent (+ lvl 1)) (compile-type< (nth 1 form)) (nth 2 form)))
+    (format *output* "~&~A~A = ~A[~A];~%" (indent (+ lvl 1)) (compile-type< (nth 1 form)) (nth 2 form) counter))
   (compile-body (nthcdr 4 form) (+ lvl 1))
   (format *output* "~&~A}~%" (indent lvl)))
 
