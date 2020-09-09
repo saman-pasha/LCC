@@ -475,7 +475,7 @@
   (let ((counter (gensym)))
     (format *output* "~&~Afor (int ~A = 0; ~A < ~A; ~A++) {~%" (indent lvl)
 	    counter counter (compile-form< (nth 3 form)) counter)
-    (format *output* "~&~A~A = ~A;~%" (indent (+ lvl 1)) (compile-type< (nth 1 form)) (nth 2 form)))
+    (format *output* "~&~A~A = ~A[~A];~%" (indent (+ lvl 1)) (compile-type< (nth 1 form)) (nth 2 form) counter))
   (compile-body (nthcdr 4 form) (+ lvl 1))
   (format *output* "~&~A}~%" (indent lvl)))
 
@@ -507,6 +507,9 @@
 			 is-static is-register is-auto
 			 (format-type-value const type modifier const-ptr variable array value)))
 	       (setq is-static nil))))
+    (dolist (variable (reverse dynamics))
+      (format *output* "~&~Aif(~A == NULL) printf(\"dynamic memory allocation failed! ~A\n\");~%" (indent (+ lvl 1))
+	      variable variable))
     (compile-body (nthcdr 2 form) (+ lvl 1))
     (dolist (variable dynamics)
       (format *output* "~&~Afree(~A);~%"(indent (+ lvl 1)) variable))
