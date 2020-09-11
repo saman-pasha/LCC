@@ -591,6 +591,13 @@ int addition(int *a,int *b)
     return *a + *b;
 }
 ```
+```lisp
+{declare} (function function_pointer ((int) (int)))
+```
+```c
+void function_pointer (int, int);
+typedef void (*function_pointer_t) (int, int);
+```
 ## Array
 ### Define
 ```lisp
