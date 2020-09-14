@@ -722,7 +722,7 @@ Allocation with `new` and equivalent code in C:
 ```c
 {
     char * safe_alloc = ((char *)malloc((15 * sizeof(char))));
-    if(safe_alloc == NULL) printf("dynamic memory allocation failed! safe_alloc\n");
+    if (safe_alloc == NULL) printf("dynamic memory allocation failed! safe_alloc\n");
     printf("Memory allocated safely\n");
     free(safe_alloc);
 }
@@ -738,7 +738,7 @@ Allocation with `new` and equivalent code in C:
     int n_rows = 4;
     int n_columns = 5;
     int ** matrix = ((int **)malloc(((n_rows * n_columns) * sizeof(int))));
-    if(matrix == NULL) printf("dynamic memory allocation failed! matrix\n");
+    if (matrix == NULL) printf("dynamic memory allocation failed! matrix\n");
     printf("Matrix allocated\n");
     free(matrix);
 }
