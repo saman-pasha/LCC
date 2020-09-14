@@ -630,6 +630,8 @@
 		    ((key-eq construct '|declares|) (setq declares (append declares (nthcdr 1 clause))))
 		    (t (error (format nil "unknown clause ~A in struct ~A" construct name)))))
 	  (error (format nil "syntax error ~A" clause))))
+      (when (and (not is-anonymous) (> (length declares) 0))
+	(error (format nil "declares must be inside anonymous struct ~A" name)))
       (format *output* "~&~A}~:[ ~A~;~]~:[ ~;~]" (indent lvl) is-anonymous name (null declares))
       (format *output* "~{~A~^, ~};~%" declares))))
 
