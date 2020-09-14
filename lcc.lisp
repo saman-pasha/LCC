@@ -7,11 +7,11 @@
 
 (defvar *output* t)
 
-(defvar *unary* '(+ - ++ |++#| -- |--#| ~ ! |not| * |contentof| & |addressof|))
-(defvar *operators* '(+ - * / % == != > < >= <= ^ |xor| << >> && |and| |or| & |bitand| |bitor| |->| $))
-(defvar *assignments* '(= += -= *= /= %= <<= >>=))
-
-(defvar *modifiers* '(& * **))
+(defvar *unary* '(|+| |-| |++| |++#| |--| |--#| |~| |!| |not| |*| |contentof| |&| |addressof|))
+(defvar *operators* '(|+| |-| |*| |/| |%| |==| |!=| |>| |<| |>=| |<=| |^| |xor| |<<| |>>|
+		      |&&| |and| |or| |&| |bitand| |bitor| |->| |$|))
+(defvar *assignments* '(|=| |+=| |-=| |*=| |/=| |%=| |<<=| |>>=|))
+(defvar *modifiers* '(|&| |*| |**|))
 
 (set-dispatch-macro-character
  #\# #\t #'(lambda (stream char1 char2)
@@ -29,6 +29,14 @@
 	 (read-delimited-list #\} stream t)))
 
 (set-macro-character #\} (get-macro-character #\)) nil)
+
+(set-macro-character
+ #\" #'(lambda (stream char)
+	 (declare (ignore char))
+	 (with-output-to-string (out)
+				(do ((char (read-char stream nil nil) (read-char stream nil nil)))
+				    ((char= char #\") nil)
+				    (write char :stream out :escape nil)))))
 
 (defun reving (list result)
   (cond ((consp list) (reving (cdr list) (cons (car list) result)))
@@ -63,8 +71,8 @@
 		    (let ((*readtable* (copy-readtable)))
 		      (setf (readtable-case *readtable*) :preserve)
 		      (DO ((target (READ file) (READ file NIL NIL)))
-			  ((NULL target) T)
-			  (PUSH target targets))))
+			((NULL target) T)
+			(PUSH target targets))))
     (nreverse targets)))
 
 (defun is-name (name)
@@ -149,7 +157,7 @@
 			 (progn
 			   (setq const (nth 0 desc))
 			   (setq type (nth 1 desc)))
-		       (if (find (nth 1 desc) *modifiers*)
+		       (if (find (nth 1 desc) *modifiers* :test #'key-eq)
 			   (progn
 			     (setq type (nth 0 desc))
 			     (setq modifier (nth 1 desc)))
@@ -161,7 +169,7 @@
 			     (setq type (nth 0 desc))
 			     (setq variable (nth 1 desc)))))))
 	  ((= len 3) (if (key-eq (nth 0 desc) '|const|)
-			 (if (find (nth 2 desc) *modifiers*) 
+			 (if (find (nth 2 desc) *modifiers* :test #'key-eq) 
 			     (progn
 			       (setq const (nth 0 desc))
 			       (setq type (nth 1 desc))
@@ -175,7 +183,7 @@
 			       (setq const (nth 0 desc))
 			       (setq type (nth 1 desc))
 			       (setq variable (nth 2 desc)))))
-		       (if (find (nth 1 desc) *modifiers*)
+		       (if (find (nth 1 desc) *modifiers* :test #'key-eq)
 			   (if (key-eq (nth 2 desc) '|const|)
 			       (progn
 				 (setq type (nth 0 desc))
@@ -195,7 +203,7 @@
 			   (setq variable (nth 1 desc))
 			   (setq array (nth 2 desc))))))
 	  ((= len 4) (if (key-eq (nth 0 desc) '|const|)
-			 (if (find (nth 2 desc) *modifiers*)
+			 (if (find (nth 2 desc) *modifiers* :test #'key-eq)
 			     (if (key-eq (nth 3 desc) '|const|)
 				 (progn
 				   (setq const (nth 0 desc))
@@ -297,7 +305,7 @@
 	((key-eq '|nil| obj) "NULL")
 	((numberp obj) (format nil "~A" obj))
 	((characterp obj) (if (eql obj #\Null) (format nil "'\\0'" obj) (format nil "'~C'" obj)))
-	((stringp obj) (format nil "~S" obj))
+	((stringp obj) (format nil "\"~A\"" obj))
 	((and (symbolp obj) (is-symbol obj))
 	 (cond ((key-eq obj '|#t|) "true")
 	       ((key-eq obj '|#f|) "false")
@@ -369,8 +377,8 @@
 		((key-eq func 'QUOTE)    (format nil "{~{~A~^, ~}}" (mapcar #'compile-form< (cadr form))))
 		((and (> (length form) 2) (key-eq func '\|) (key-eq (cadr form) '\|)) (compile-operator< (push '\|\| (cddr form))))
 		((and (> (length form) 2) (key-eq func '\|)) (compile-operator< form))
-		((and (= (length form) 2) (find func *unary*))     (compile-unary< form))
-		((and (> (length form) 2) (find func *operators*)) (compile-operator< form))
+		((and (= (length form) 2) (find func *unary* :test #'key-eq))     (compile-unary< form))
+		((and (> (length form) 2) (find func *operators* :test #'key-eq)) (compile-operator< form))
 		((key-eq func '|nth|)    (compile-nth-form< form)) 
 		((key-eq func '|?|)      (compile-?-form< form)) 
 		((key-eq func '|cast|)   (compile-cast-form< form)) 
@@ -480,7 +488,7 @@
 			 (format-type-value const type modifier const-ptr variable array value)))
 	       (setq is-static nil))))
     (dolist (variable (reverse dynamics))
-      (format *output* "~&~Aif(~A == NULL) printf(\"dynamic memory allocation failed! ~A\n\");~%" (indent (+ lvl 1))
+      (format *output* "~&~Aif (~A == NULL) printf(\"dynamic memory allocation failed! ~A\\n\");~%" (indent (+ lvl 1))
 	      variable variable))
     (compile-body (nthcdr 2 form) (+ lvl 1))
     (dolist (variable dynamics)
@@ -493,9 +501,9 @@
 	  ((symbolp form)   (format *output* "~&~A~A;" (indent lvl) (compile-form< form)))
 	  (t (let ((func (car form)))
 	       (cond ((listp func) (error (format nil "function name or operator is missing ~A" form)))
-		     ((and (= (length form) 2) (find func *unary*))
+		     ((and (= (length form) 2) (find func *unary* :test #'key-eq))
 		      (format *output* "~&~A~A;" (indent lvl) (compile-unary< form)))
-		     ((and (= (length form) 3) (find func *assignments*))
+		     ((and (= (length form) 3) (find func *assignments* :test #'key-eq))
 		      (format *output* "~&~A~A;" (indent lvl) (compile-assignment< form)))
 		     ((key-eq func '|break|)    (format *output* "~&~Abreak;"    (indent lvl)))
 		     ((key-eq func '|continue|) (format *output* "~&~Acontinue;" (indent lvl)))
