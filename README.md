@@ -707,8 +707,10 @@ C dynamic memory allocation functions `malloc()`, `calloc()`, `realloc()`, `free
 ```
 ```c
 {    
-  char *mem_alloc = malloc(15 * sizeof(char)); /* memory allocated dynamically */
-  if (mem_alloc == NULL) printf("Couldn't able to allocate requested memory\n");
+  char * mem_alloc = malloc(15 * sizeof(char)); /* memory allocated dynamically */
+  if (mem_alloc == NULL) {
+    printf("Couldn't able to allocate requested memory\n");
+  }
   free(mem_alloc);
 }
 ```
@@ -718,11 +720,27 @@ Allocation with `new` and equivalent code in C:
   (printf "Memory allocated safely\n"))
 ```
 ```c
-{    
-  char *safe_alloc = malloc(15 * sizeof(char)); 
-  if (safe_alloc == NULL) printf("dynamic memory allocation failed! safe_alloc\n");
-  printf("Memory allocated safely\n");
-  free(safe_alloc);
+{
+    char * safe_alloc = ((char *)malloc((15 * sizeof(char))));
+    if(safe_alloc == NULL) printf("dynamic memory allocation failed! safe_alloc\n");
+    printf("Memory allocated safely\n");
+    free(safe_alloc);
+}
+```
+```lisp
+(let ((int n_rows . 4)
+      (int n_columns . 5)
+      (int ** matrix . #'(new (* (* n_rows n_columns) (sizeof int)))))
+  (printf "Matrix allocated\n"))
+```
+```c
+{
+    int n_rows = 4;
+    int n_columns = 5;
+    int ** matrix = ((int **)malloc(((n_rows * n_columns) * sizeof(int))));
+    if(matrix == NULL) printf("dynamic memory allocation failed! matrix\n");
+    printf("Matrix allocated\n");
+    free(matrix);
 }
 ```
 Allocation by `new` and equivalent `calloc`:
@@ -732,14 +750,14 @@ Allocation by `new` and equivalent `calloc`:
 ```
 ```c
 {    
-  char *safe_alloc = calloc(15, sizeof(char)); 
+  char * safe_alloc = calloc(15, sizeof(char)); 
   if (safe_alloc == NULL) printf("dynamic memory allocation failed! safe_alloc\n");
   printf("Memory allocated safely\n");
   free(safe_alloc);
 }
 ```
 ## Structure
-`declares` form is declaring one or more variable(s) at the end of struct declaration.
+`declares` form is declaring one or more variable(s) at the end of struct declaration just for anonymous structures.
 ```lisp
 (struct Course
   (member char WebSite [50])
@@ -755,7 +773,7 @@ typedef struct Course
 } Course;
 ```
 ## Union
-`declares` form is declaring one or more variable(s) at the end of union declaration.
+`declares` form is declaring one or more variable(s) at the end of union declaration just for anonymous unions.
 ```lisp
 (struct USHAContext
   (member int whichSha)                 ; which SHA is being used
