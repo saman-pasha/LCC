@@ -758,22 +758,44 @@ Allocation by `new` and equivalent `calloc`:
 ```
 ## Structure
 `declares` form is declaring one or more variable(s) at the end of struct declaration just for anonymous structures.
+Use `$` form for struct's member access and `->` form for member access of pointer of struct.
 ```lisp
 (struct Course
   (member char WebSite [50])
   (member char Subject [50])
   (member int  Price))
+  
+(variable Course c1 . '{"domain.com" "Compilers" 100})
+(variable Course * pc1 . #'(addressof c1))
+  
+(function print_course ()
+  (printf "Course: %s in %s for %d$" 
+    ($ c1 Subject) 
+    ($ c1 WebSite)
+    ($ c1 Price))
+  (printf "Course: %s in %s for %d$" 
+    (-> pc1 Subject) 
+    (-> pc1 WebSite)
+    (-> pc1 Price)))
 ```
 ```c
-typedef struct Course
-{
-  char  WebSite[50];
-  char  Subject[50];
-  int   Price;
+typedef struct Course {
+  char WebSite [50];
+  char Subject [50];
+  int Price;
 } Course;
+
+Course c1 = {"domain.com", "Compilers", 100};
+Course * pc1 = &c1;
+
+void print_course () {
+  printf("Course: %s in %s for %d$", c1.Subject, c1.WebSite, c1.Price);
+  printf("Course: %s in %s for %d$", pc1->Subject, pc1->WebSite, pc1->Price);
+}
 ```
 ## Union
 `declares` form is declaring one or more variable(s) at the end of union declaration just for anonymous unions.
+Use `$` form for union's member access and `->` form for member access of pointer of union.
 ```lisp
 (struct USHAContext
   (member int whichSha)                 ; which SHA is being used
