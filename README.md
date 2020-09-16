@@ -494,7 +494,7 @@ If form accepts 2 or 3 argument. condition, form for true evaluation of conditio
 ```c
 for (int n = 1, int times = 5; (n <= times);) {
   n++;
-  printf("lcc for loops: %dn", n);
+  printf("lcc for loops: %d\n", n);
 }
 ```
 ### for-each
