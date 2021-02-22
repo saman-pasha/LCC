@@ -135,7 +135,7 @@ lcc Operator | C Operator
 ### Conditional
 lcc Operator | C Operator
 ------------ | ----------
-`?`|`?=`
+`?`|`?:`
 ```lisp
 (set a (? (== b 2) 20 30))
 ```
