@@ -500,7 +500,7 @@ for (int n = 1, int times = 5; (n <= times);) {
 ### for-each
 Static array:
 ```lisp
-(let ((int [] ages . '{20 22 24 26}))
+(let ((int ages [] . '{20 22 24 26}))
   (for-each (int i) ages (/ (sizeof ages) (sizeof int))
     (printf "each age: %d\n" i)))
 ```
