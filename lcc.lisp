@@ -7,7 +7,7 @@
 
 (defvar *output* t)
 
-(defvar *unary* '(|+| |-| |++| |++#| |--| |--#| |~| |!| |not| |*| |contentof| |&| |addressof|))
+(defvar *unaries* '(|+| |-| |++| |++#| |--| |--#| |~| |!| |not| |*| |contentof| |&| |addressof|))
 (defvar *operators* '(|+| |-| |*| |/| |%| |==| |!=| |>| |<| |>=| |<=| |^| |xor| |<<| |>>|
 		      |&&| |and| |or| |&| |bitand| |bitor| |->| |$|))
 (defvar *assignments* '(|=| |+=| |-=| |*=| |/=| |%=| |<<=| |>>=|))
@@ -29,14 +29,6 @@
 	 (read-delimited-list #\} stream t)))
 
 (set-macro-character #\} (get-macro-character #\)) nil)
-
-(set-macro-character
- #\" #'(lambda (stream char)
-	 (declare (ignore char))
-	 (with-output-to-string (out)
-				(do ((char (read-char stream nil nil) (read-char stream nil nil)))
-				    ((char= char #\") nil)
-				    (write char :stream out :escape nil)))))
 
 (defun reving (list result)
   (cond ((consp list) (reving (cdr list) (cons (car list) result)))
@@ -377,7 +369,7 @@
 		((key-eq func 'QUOTE)    (format nil "{~{~A~^, ~}}" (mapcar #'compile-form< (cadr form))))
 		((and (> (length form) 2) (key-eq func '\|) (key-eq (cadr form) '\|)) (compile-operator< (push '\|\| (cddr form))))
 		((and (> (length form) 2) (key-eq func '\|)) (compile-operator< form))
-		((and (= (length form) 2) (find func *unary* :test #'key-eq))     (compile-unary< form))
+		((and (= (length form) 2) (find func *unaries* :test #'key-eq))     (compile-unary< form))
 		((and (> (length form) 2) (find func *operators* :test #'key-eq)) (compile-operator< form))
 		((key-eq func '|nth|)    (compile-nth-form< form)) 
 		((key-eq func '|?|)      (compile-?-form< form)) 
@@ -501,7 +493,7 @@
 	  ((symbolp form)   (format *output* "~&~A~A;" (indent lvl) (compile-form< form)))
 	  (t (let ((func (car form)))
 	       (cond ((listp func) (error (format nil "function name or operator is missing ~A" form)))
-		     ((and (= (length form) 2) (find func *unary* :test #'key-eq))
+		     ((and (= (length form) 2) (find func *unaries* :test #'key-eq))
 		      (format *output* "~&~A~A;" (indent lvl) (compile-unary< form)))
 		     ((and (= (length form) 3) (find func *assignments* :test #'key-eq))
 		      (format *output* "~&~A~A;" (indent lvl) (compile-assignment< form)))

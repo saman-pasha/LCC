@@ -193,45 +193,45 @@
 	(declares ctx)))
 
     ;; * SHA-1 *
-    {extern} {declare} (function SHA1Reset ((SHA1Context *)) (-> int))
-    {extern} {declare} (function SHA1Input ((SHA1Context *) (const uint8_t * bytes) (uint bytecount)) (-> int))
-    {extern} {declare} (function SHA1FinalBits ((SHA1Context *) (uint8_t bits) (uint bit_count)) (-> int))
-    {extern} {declare} (function SHA1Result ((SHA1Context *) (uint8_t Message_Digest[SHA1HashSize])) (-> int))
+    {extern} {declare} (function SHA1Reset ((SHA1Context *)) (returns int))
+    {extern} {declare} (function SHA1Input ((SHA1Context *) (const uint8_t * bytes) (uint bytecount)) (returns int))
+    {extern} {declare} (function SHA1FinalBits ((SHA1Context *) (uint8_t bits) (uint bit_count)) (returns int))
+    {extern} {declare} (function SHA1Result ((SHA1Context *) (uint8_t Message_Digest[SHA1HashSize])) (returns int))
 
     ;; * SHA-224 *
-    {extern} {declare} (function SHA224Reset ((SHA224Context *)) (-> int))
-    {extern} {declare} (function SHA224Input ((SHA224Context *) (const uint8_t * bytes) (uint bytecount)) (-> int))
-    {extern} {declare} (function SHA224FinalBits ((SHA224Context *) (uint8_t bits) (uint bit_count)) (-> int))
-    {extern} {declare} (function SHA224Result ((SHA224Context *) (uint8_t Message_Digest[SHA224HashSize])) (-> int))
+    {extern} {declare} (function SHA224Reset ((SHA224Context *)) (returns int))
+    {extern} {declare} (function SHA224Input ((SHA224Context *) (const uint8_t * bytes) (uint bytecount)) (returns int))
+    {extern} {declare} (function SHA224FinalBits ((SHA224Context *) (uint8_t bits) (uint bit_count)) (returns int))
+    {extern} {declare} (function SHA224Result ((SHA224Context *) (uint8_t Message_Digest[SHA224HashSize])) (returns int))
 
     ;; * SHA-256 *
-    {extern} {declare} (function SHA256Reset ((SHA256Context *)) (-> int))
-    {extern} {declare} (function SHA256Input ((SHA256Context *) (const uint8_t * bytes) (uint bytecount)) (-> int))
-    {extern} {declare} (function SHA256FinalBits ((SHA256Context *) (uint8_t bits) (uint bit_count)) (-> int))
-    {extern} {declare} (function SHA256Result ((SHA256Context *) (uint8_t Message_Digest[SHA256HashSize])) (-> int))
+    {extern} {declare} (function SHA256Reset ((SHA256Context *)) (returns int))
+    {extern} {declare} (function SHA256Input ((SHA256Context *) (const uint8_t * bytes) (uint bytecount)) (returns int))
+    {extern} {declare} (function SHA256FinalBits ((SHA256Context *) (uint8_t bits) (uint bit_count)) (returns int))
+    {extern} {declare} (function SHA256Result ((SHA256Context *) (uint8_t Message_Digest[SHA256HashSize])) (returns int))
 
     ;; * SHA-384 *
-    {extern} {declare} (function SHA384Reset ((SHA384Context *)) (-> int))
-    {extern} {declare} (function SHA384Input ((SHA384Context *) (const uint8_t * bytes) (uint bytecount)) (-> int))
-    {extern} {declare} (function SHA384FinalBits ((SHA384Context *) (uint8_t bits) (uint bit_count)) (-> int))
-    {extern} {declare} (function SHA384Result ((SHA384Context *) (uint8_t Message_Digest[SHA384HashSize])) (-> int))
+    {extern} {declare} (function SHA384Reset ((SHA384Context *)) (returns int))
+    {extern} {declare} (function SHA384Input ((SHA384Context *) (const uint8_t * bytes) (uint bytecount)) (returns int))
+    {extern} {declare} (function SHA384FinalBits ((SHA384Context *) (uint8_t bits) (uint bit_count)) (returns int))
+    {extern} {declare} (function SHA384Result ((SHA384Context *) (uint8_t Message_Digest[SHA384HashSize])) (returns int))
 
     ;; * SHA-512 *
-    {extern} {declare} (function SHA512Reset ((SHA512Context *)) (-> int))
-    {extern} {declare} (function SHA512Input ((SHA512Context *) (const uint8_t * bytes) (uint bytecount)) (-> int))
-    {extern} {declare} (function SHA512FinalBits ((SHA512Context *) (uint8_t bits) (uint bit_count)) (-> int))
-    {extern} {declare} (function SHA512Result ((SHA512Context *) (uint8_t Message_Digest[SHA512HashSize])) (-> int))
+    {extern} {declare} (function SHA512Reset ((SHA512Context *)) (returns int))
+    {extern} {declare} (function SHA512Input ((SHA512Context *) (const uint8_t * bytes) (uint bytecount)) (returns int))
+    {extern} {declare} (function SHA512FinalBits ((SHA512Context *) (uint8_t bits) (uint bit_count)) (returns int))
+    {extern} {declare} (function SHA512Result ((SHA512Context *) (uint8_t Message_Digest[SHA512HashSize])) (returns int))
 
     ;; * Unified SHA functions, chosen by whichSha *
-    {extern} {declare} (function USHAReset ((USHAContext * context) (SHAversion whichSha)) (-> int))
-    {extern} {declare} (function USHAInput ((USHAContext * context) (const uint8_t * bytes) (uint bytecount)) (-> int))
-    {extern} {declare} (function USHAFinalBits ((USHAContext * context) (uint8_t bits) (uint bit_count)) (-> int))
-    {extern} {declare} (function USHAResult ((USHAContext * context) (uint8_t Message_Digest[USHAMaxHashSize])) (-> int))
+    {extern} {declare} (function USHAReset ((USHAContext * context) (SHAversion whichSha)) (returns int))
+    {extern} {declare} (function USHAInput ((USHAContext * context) (const uint8_t * bytes) (uint bytecount)) (returns int))
+    {extern} {declare} (function USHAFinalBits ((USHAContext * context) (uint8_t bits) (uint bit_count)) (returns int))
+    {extern} {declare} (function USHAResult ((USHAContext * context) (uint8_t Message_Digest[USHAMaxHashSize])) (returns int))
 
-    {extern} {declare} (function USHABlockSize ((SHAversion whichSha)) (-> int))
-    {extern} {declare} (function USHAHashSize ((SHAversion whichSha)) (-> int))
-    {extern} {declare} (function USHAHashSizeBits ((SHAversion whichSha)) (-> int))
-    {extern} {declare} (function USHAHashName ((SHAversion whichSha)) (-> const char *))
+    {extern} {declare} (function USHABlockSize ((SHAversion whichSha)) (returns int))
+    {extern} {declare} (function USHAHashSize ((SHAversion whichSha)) (returns int))
+    {extern} {declare} (function USHAHashSizeBits ((SHAversion whichSha)) (returns int))
+    {extern} {declare} (function USHAHashName ((SHAversion whichSha)) (returns const char *))
     
     ))					; target sha.h
 
@@ -353,7 +353,7 @@
   ;; *      sha Error Code.
   ;; *
   ;; *
-  (function SHA1Input ((SHA1Context * context) (const uint8_t * message_array) (unsigned length)) (-> int)
+  (function SHA1Input ((SHA1Context * context) (const uint8_t * message_array) (unsigned length)) (returns int)
 	    (if (not context)          (return shaNull))
 	    (if (not length)           (return shaSuccess))
 	    (if (not message_array)    (return shaNull))
@@ -394,7 +394,7 @@
   ;; * Returns:
   ;; *   sha Error Code.
   ;; *
-  (function SHA1FinalBits ((SHA1Context * context) (uint8_t message_bits) (uint length)) (-> int)
+  (function SHA1FinalBits ((SHA1Context * context) (uint8_t message_bits) (uint length)) (returns int)
 	    (if (not context) (return shaNull))
 	    (if (not length)  (return shaSuccess))
 	    (if (-> context Corrupted) (return (-> context Corrupted)))
