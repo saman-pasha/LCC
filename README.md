@@ -2,7 +2,10 @@
 Lisp C Compiler, Lisp-like syntax for writing C code in addition of some forms and pointer managements.
 ## Instruction
 * Install [SBCL](www.sbcl.org).
-* Write your own lcc code and save it in `.lisp` extension.
+* lcc as default uses [Libtool](https://www.gnu.org/software/libtool) for compiling and linking `C` code. If you like it just install it for your platform and put it in the `PATH` environment variable. Compiler and linker could be set in `lcc-config.lisp` file.
+* Download and copy lcc folder to `~/common-lisp` for enabling [ASDF](https://common-lisp.net/project/asdf) access to lcc package.
+* Write your own lcc code and save it in `.lcc` or `.lisp` extension.
+* Copy `lcc.lisp` file from source folder into your project path.
 * Send your file as an argument to lcc.lisp. `sbcl --script lcc.lisp test.lisp`
 * If you are using EMACS editor, copy mode.lisp file content into .emacs file for syntax highlighting.
 ## Identifiers
@@ -298,10 +301,11 @@ lcc program involves one or many target form.
 targets are translating it's content forms to C code.
 each target must has a target c file, and a list of feature arguments.
 ### Features
+All features could be omitted or if available accept `#t` for default behaviour or `#f` for do nothing.
 * <b>:std</b>: writes standard libraries inclusion at top of target file.
 ```lisp
 (target "main.c"
-  (:std)
+  (:std #t)
   ;; some forms
   )
 ```
@@ -312,6 +316,73 @@ each target must has a target c file, and a list of feature arguments.
 #include <stdlib.h>
 #include <stdbool.h>
 ```
+* <b>:compile</b>: used for compiling target file. Dafault behaviour is `-c target.c`. Could be a list of arguments that will send to compiler which has been set in `lcc-config.lisp`.
+* <b>:link</b>: used for linking and builing target file as library or executable. Dafault behaviour is `-o a`. Could be a list of arguments that will send to linker which has been set in `lcc-config.lisp`.
+```lisp
+;; MyMath library declaration
+(target "mymath.h"
+  (:compile #f)
+
+  {declare} (function obj1_does ((int) (int)) (returns int))
+  {declare} (function obj2_does ((int) (int)) (returns int))
+  {declare} (function obj3_does ((int) (int)) (returns int)))
+
+;; Default compilation
+(target "obj1.c"
+  (:compile #t)
+  (include "mymath.h")
+  (function obj1_does ((int x) (int y)) (returns int)
+	    (return (+ x y))))
+
+;; Custom compilation
+(target "obj2.c"
+  (:compile ("-c" "obj2.c" "-o" "objmul.o"))
+  (include "mymath.h")
+  (function obj2_does ((int x) (int y)) (returns int)
+	    (return (* x y))))
+
+;; Library creation and linking
+(target "obj3.c"
+  (:compile #t :link ("-o" "libMyMath.la" "obj1.lo" "objmul.lo" "obj3.lo"))
+  (include "mymath.h")
+  (function obj3_does ((int x) (int y)) (returns int)
+	    (return (obj1_does (obj2_does x y) (obj2_does x y)))))
+
+;; Executable creation and linking
+(target "main.c"
+  (:std #t :compile #t :link ("-o" "CompileTest" "main.lo" "-lMyMath"))
+  (include "mymath.h")
+  (function main ((int argc)
+		  (char * argv []))
+	    (if (!= argc 3)
+		(block
+		 (printf "two digits needed!")
+		 (return EXIT_FAILURE)))
+	    (let ((int x . #'(atoi (nth 1 argv)))
+		  (int y . #'(atoi (nth 2 argv))))
+	      (printf "MyMath lib outputs: %d\n" (obj3_does x y)))
+	    (return EXIT_SUCCESS)))
+```
+`
+lcc: compiling target mymath.h
+lcc: compiling target obj1.c
+libtool: compile:  gcc -g -O -c obj1.c  -fPIC -DPIC -o .libs/obj1.o
+libtool: compile:  gcc -g -O -c obj1.c -o obj1.o >/dev/null 2>&1
+lcc: compiling target obj2.c
+libtool: compile:  gcc -g -O -c obj2.c  -fPIC -DPIC -o .libs/objmul.o
+libtool: compile:  gcc -g -O -c obj2.c -o objmul.o >/dev/null 2>&1
+lcc: compiling target obj3.c
+libtool: compile:  gcc -g -O -c obj3.c  -fPIC -DPIC -o .libs/obj3.o
+libtool: compile:  gcc -g -O -c obj3.c -o obj3.o >/dev/null 2>&1
+libtool: link: rm -fr  .libs/libMyMath.a .libs/libMyMath.la
+libtool: link: ar cr .libs/libMyMath.a .libs/obj1.o .libs/objmul.o .libs/obj3.o 
+libtool: link: ranlib .libs/libMyMath.a
+libtool: link: ( cd ".libs" && rm -f "libMyMath.la" && ln -s "../libMyMath.la" "libMyMath.la" )
+lcc: compiling target main.c
+libtool: compile:  gcc -g -O -c main.c  -fPIC -DPIC -o .libs/main.o
+libtool: compile:  gcc -g -O -c main.c -o main.o >/dev/null 2>&1
+libtool: link: gcc -g -O -o CompileTest .libs/main.o  /home/saman/Projects/LCC/trunk/.libs/libMyMath.a
+`
 ### Sections
 * Documentations: starts with semi-colon(s) ";"
 ```lisp
@@ -362,7 +433,7 @@ typedef struct SHA512Context {
 * Main Function: The main function is where program execution begins. Every lcc program must contain only one main function.
 ## Decision Making
 ### if
-If form accepts 2 or 3 argument. condition, form for true evaluation of condition and form for false evaluation. third part(else) could be omitted. use progn form if you need more forms in each part.
+If form accepts 2 or 3 argument. condition, form for true evaluation of condition and form for false evaluation. third part(else) could be omitted. use ```block``` form if you need more forms in each part.
 ```lisp
 (let ((int a . 5)
       (int b . 6))
@@ -384,10 +455,10 @@ If form accepts 2 or 3 argument. condition, form for true evaluation of conditio
 (let ((int a . 5)
       (int b . 6))
   (if (> a b)
-     (progn
+     (block
        (printf "a is greater")
        (set a (* a b)))
-    (progn
+    (block
       (printf "maybe b is greater")
       (set b (* b a)))))
 ```
@@ -539,7 +610,7 @@ lcc has some points on functions:
 * Each declared function defined a function pointer typedef named FunctionName_t.
 ```lisp
 (target "main.c"
-  (:std)
+  (:std #t)
   
   ;; function declaration
   {declare} (function addition ((int * a) (int * b)) (returns int))
