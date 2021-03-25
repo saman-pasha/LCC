@@ -783,10 +783,8 @@
 		 (custom (nth (+ i 1) args)))
 	    (if (key-eq custom '|false|)
 	        t
-	      (progn
-		(when (key-eq custom '|true|) (setq custom (list "-o" "a")))
 		(sb-ext:run-program program `(,@arguments ,@custom)
-				    :search t :wait t :input nil :output *standard-output*)))))))
+				    :search t :wait t :input nil :output *standard-output*))))))
     (setq *output* t)))
 
 (defun compile-ast (targets)

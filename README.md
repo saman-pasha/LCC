@@ -317,7 +317,7 @@ All features could be omitted or if available accept `#t` for default behaviour 
 #include <stdbool.h>
 ```
 * <b>:compile</b>: used for compiling target file. Dafault behaviour is `-c target.c`. Could be a list of arguments that will send to compiler which has been set in `lcc-config.lisp`.
-* <b>:link</b>: used for linking and builing target file as library or executable. Dafault behaviour is `-o a`. Could be a list of arguments that will send to linker which has been set in `lcc-config.lisp`.
+* <b>:link</b>: used for linking and builing target file as library or executable. It has not dfault behaviour. Could be a list of arguments that will send to linker which has been set in `lcc-config.lisp`.
 ```lisp
 ;; MyMath library declaration
 (target "mymath.h"
@@ -363,7 +363,7 @@ All features could be omitted or if available accept `#t` for default behaviour 
 	      (printf "MyMath lib outputs: %d\n" (obj3_does x y)))
 	    (return EXIT_SUCCESS)))
 ```
-`
+```
 lcc: compiling target mymath.h
 lcc: compiling target obj1.c
 libtool: compile:  gcc -g -O -c obj1.c  -fPIC -DPIC -o .libs/obj1.o
@@ -382,7 +382,7 @@ lcc: compiling target main.c
 libtool: compile:  gcc -g -O -c main.c  -fPIC -DPIC -o .libs/main.o
 libtool: compile:  gcc -g -O -c main.c -o main.o >/dev/null 2>&1
 libtool: link: gcc -g -O -o CompileTest .libs/main.o  /home/saman/Projects/LCC/trunk/.libs/libMyMath.a
-`
+```
 ### Sections
 * Documentations: starts with semi-colon(s) ";"
 ```lisp
