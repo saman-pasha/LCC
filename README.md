@@ -323,9 +323,10 @@ All features could be omitted or if available accept `#t` for default behaviour 
 (target "mymath.h"
   (:compile #f)
 
-  {declare} (function obj1_does ((int) (int)) (returns int))
-  {declare} (function obj2_does ((int) (int)) (returns int))
-  {declare} (function obj3_does ((int) (int)) (returns int)))
+  (guard __MYMATH_H__
+    {declare} (function obj1_does ((int) (int)) (returns int))
+    {declare} (function obj2_does ((int) (int)) (returns int))
+    {declare} (function obj3_does ((int) (int)) (returns int))))
 
 ;; Default compilation
 (target "obj1.c"
@@ -770,7 +771,7 @@ int main (int argc, char *argv[])
 }
 ```
 ## Dynamic Memory Allocation
-C dynamic memory allocation functions `malloc()`, `calloc()`, `realloc()`, `free()` are available. Other keyword `new` that works in `let` initialization part which automatically is checking pointer and freeing allocated memory at the end of let scope.
+C dynamic memory allocation functions `malloc()`, `calloc()`, `realloc()`, `free()` are available. Other keyword `alloc` that works in `let` initialization part which automatically is checking pointer and freeing allocated memory at the end of let scope.
 ```lisp
 (let ((char * mem_alloc . #'(malloc (* 15 (sizeof char))))) ; memory allocated dynamically
   (if (== mem_alloc nil) (printf "Couldn't able to allocate requested memory\n"))
@@ -785,9 +786,9 @@ C dynamic memory allocation functions `malloc()`, `calloc()`, `realloc()`, `free
   free(mem_alloc);
 }
 ```
-Allocation with `new` and equivalent code in C:
+Allocation with `alloc` and equivalent code in C:
 ```lisp
-(let ((char * safe_alloc . #'(new (* 15 (sizeof char)))))
+(let ((char * safe_alloc . #'(alloc (* 15 (sizeof char)))))
   (printf "Memory allocated safely\n"))
 ```
 ```c
@@ -801,7 +802,7 @@ Allocation with `new` and equivalent code in C:
 ```lisp
 (let ((int n_rows . 4)
       (int n_columns . 5)
-      (int ** matrix . #'(new (* (* n_rows n_columns) (sizeof int)))))
+      (int ** matrix . #'(alloc (* (* n_rows n_columns) (sizeof int)))))
   (printf "Matrix allocated\n"))
 ```
 ```c
@@ -814,9 +815,9 @@ Allocation with `new` and equivalent code in C:
     free(matrix);
 }
 ```
-Allocation by `new` and equivalent `calloc`:
+Allocation by `alloc` and equivalent `calloc`:
 ```lisp
-(let ((char * safe_alloc . #'(new 15 (sizeof char))))
+(let ((char * safe_alloc . #'(alloc 15 (sizeof char))))
   (printf "Memory allocated safely\n"))
 ```
 ```c
@@ -828,7 +829,7 @@ Allocation by `new` and equivalent `calloc`:
 }
 ```
 ## Structure
-`declares` form is declaring one or more variable(s) at the end of struct declaration just for anonymous structures.
+`declares` form is for declaring one or more variable(s) at the end of nested struct declaration just for anonymous structures.
 Use `$` form for struct's member access and `->` form for member access of pointer of struct.
 ```lisp
 (struct Course
@@ -865,7 +866,7 @@ void print_course () {
 }
 ```
 ## Union
-`declares` form is declaring one or more variable(s) at the end of union declaration just for anonymous unions.
+`declares` form is for declaring one or more variable(s) at the end of nested union declaration just for anonymous unions.
 Use `$` form for union's member access and `->` form for member access of pointer of union.
 ```lisp
 (struct USHAContext

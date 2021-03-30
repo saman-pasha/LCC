@@ -3,5 +3,6 @@
 (require "asdf")
 (asdf:load-system "lcc")
 
-(when (> (length sb-ext:*posix-argv*) 1)
-  (lcc:compile-lcc-file (second sb-ext:*posix-argv*)))
+(let ((argv (uiop:command-line-arguments)))
+  (when (> (length argv) 0)
+    (lcc:compile-lcc-file (first argv))))

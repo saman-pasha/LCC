@@ -145,8 +145,7 @@
       (member int_least16_t Message_Block_Index)                ; Message_Block array index
       (member uint8_t Message_Block[SHA256_Message_Block_Size]) ; 512-bit message blocks
       (member int Computed)                                     ; Is the hash computed?
-      (member int Corrupted)                                    ; Cumulative corruption code
-      )
+      (member int Corrupted))                                   ; Cumulative corruption code
 
     ;; *
     ;; *  This structure will hold context information for the SHA-512
@@ -154,17 +153,17 @@
     ;; *
     (struct SHA512Context
       (@ifdef USE_32BIT_ONLY)
-      (member uint32_t Intermediate_Hash[(/ SHA512HashSize 4)]) ; Message Digest
-      (member uint32_t Length[4])                               ; Message length in bits
-      (@else)                                                   ; !USE_32BIT_ONLY
-      (member uint64_t Intermediate_Hash[(/ SHA512HashSize 8)]) ; Message Digest
+      (member uint32_t Intermediate_Hash32[(/ SHA512HashSize 4)]) ; Message Digest
+      (member uint32_t Length[4])                                 ; Message length in bits
+      (@else)                                                     ; !USE_32BIT_ONLY
+      (member uint64_t Intermediate_Hash64[(/ SHA512HashSize 8)]) ; Message Digest
       (member uint64_t Length_High)
-      (member uint64_t Length_Low)                              ; Message length in bits
-      (@endif)                                                  ; USE_32BIT_ONLY
-      (member int_least16_t Message_Block_Index)                ; Message_Block array index
-      (member uint8_t Message_Block[SHA512_Message_Block_Size]) ; 1024-bit message blocks
-      (member int Computed)                                     ; Is the hash computed?
-      (member int Corrupted))                                   ; Cumulative corruption code
+      (member uint64_t Length_Low)                                ; Message length in bits
+      (@endif)                                                    ; USE_32BIT_ONLY
+      (member int_least16_t Message_Block_Index)                  ; Message_Block array index
+      (member uint8_t Message_Block[SHA512_Message_Block_Size])   ; 1024-bit message blocks
+      (member int Computed)                                       ; Is the hash computed?
+      (member int Corrupted))                                     ; Cumulative corruption code
 
     ;; *
     ;; *  This structure will hold context information for the SHA-224
@@ -274,7 +273,7 @@
 ;;; *
 
 (target "sha.c"
-  (:std)
+  (:std #t)
 
   (include "sha.h")
   
@@ -357,7 +356,7 @@
 	    (if (not context)          (return shaNull))
 	    (if (not length)           (return shaSuccess))
 	    (if (not message_array)    (return shaNull))
-	    (if (-> context Computed)  (progn
+	    (if (-> context Computed)  (block
 					 (set (-> context Corrupted) shaStateError)
 					 (return shaStateError)))
 	    (if (-> context Corrupted) (return (-> context Corrupted)))
@@ -398,12 +397,12 @@
 	    (if (not context) (return shaNull))
 	    (if (not length)  (return shaSuccess))
 	    (if (-> context Corrupted) (return (-> context Corrupted)))
-	    (if (-> context Computed)  (progn
-					 (set (-> context Corrupted) shaStateError)
-					 (return (-> context Corrupted))))
-	    (if (>= length 8) (progn
-				(set (-> context Corrupted) shaBadParam)
-				(return (-> context Corrupted))))
+	    (if (-> context Computed)  (block
+					(set (-> context Corrupted) shaStateError)
+					(return (-> context Corrupted))))
+	    (if (>= length 8) (block
+			       (set (-> context Corrupted) shaBadParam)
+			       (return (-> context Corrupted))))
 	    
 	    (SHA1AddLength context length)
 	    (let ({static} (uint8_t masks   [8] . '{0x00 0x80 0xC0 0xE0 0xF0 0xF8 0xFC 0xFE})
