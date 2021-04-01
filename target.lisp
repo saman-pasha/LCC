@@ -96,14 +96,14 @@
 		  (unless (key-eq custom '|false|)
 		    (progn
 		      (when (key-eq custom '|true|) (setq custom (list "-c" file)))
-		      (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output *standard-output*)))))
+		      (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))
 	      (when (key-eq (nth i args) ':|link|)
 		(let* ((command   (getf *configs* 'linker))
 		       (program   (car command))
 		       (arguments (cdr command))
 		       (custom    (nth (+ i 1) args)))
 		  (unless (key-eq custom '|false|)
-		    (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output *standard-output*)))))))
+		    (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))))
       (progn
 	(if (key-eq file '|t|)
 	    (setq *output* t)

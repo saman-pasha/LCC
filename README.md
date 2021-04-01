@@ -10,8 +10,8 @@ Lisp C Compiler, Lisp-like syntax for writing C code in addition of some forms a
 * If you are using EMACS editor, copy mode.lisp file content into .emacs file for syntax highlighting.
 ## Identifiers
 ```lisp
-(variable int amount)
-(variable double total)
+(variable (int amount))
+(variable (double total))
 ```
 ```c
 int amount;
@@ -316,8 +316,8 @@ All features could be omitted or if available accept `#t` for default behaviour 
 #include <stdlib.h>
 #include <stdbool.h>
 ```
-* <b>:compile</b>: used for compiling target file. Dafault behaviour is `-c target.c`. Could be a list of arguments that will send to compiler which has been set in `lcc-config.lisp`.
-* <b>:link</b>: used for linking and builing target file as library or executable. It has not dfault behaviour. Could be a list of arguments that will send to linker which has been set in `lcc-config.lisp`.
+* <b>:compile</b>: used for compiling target file. Dafault behaviour is `-c target.c`. Could be a list of arguments that will be sent to compiler which has been set in `lcc-config.lisp`.
+* <b>:link</b>: used for linking and builing target file as library or executable. It has not dfault behaviour. Could be a list of arguments that will be sent to linker which has been set in `lcc-config.lisp`.
 ```lisp
 ;; MyMath library declaration
 (target "mymath.h"
@@ -389,7 +389,7 @@ libtool: link: gcc -g -O -o CompileTest .libs/main.o  /home/saman/Projects/LCC/t
 ```lisp
 ;;; about a lisp file
 ;;;; author, licence and/or documentation about each target
-(variable long height) ; description of a form
+(variable (long height)) ; description of a form
 (function sqr ((double a)) 
   (returns double)
   ;; some commented code or documentation inside code
@@ -401,17 +401,17 @@ libtool: link: gcc -g -O -o CompileTest .libs/main.o  /home/saman/Projects/LCC/t
 
 (struct SHA512Context
   (@ifdef USE_32BIT_ONLY)
-  (member uint32_t Intermediate_Hash[(/ SHA512HashSize 4)]) ; Message Digest
-  (member uint32_t Length[4])                               ; Message length in bits
-  (@else)                                                   ; !USE_32BIT_ONLY
-  (member uint64_t Intermediate_Hash[(/ SHA512HashSize 8)]) ; Message Digest
-  (member uint64_t Length_High)
-  (member uint64_t Length_Low)                              ; Message length in bits
-  (@endif)                                                  ; USE_32BIT_ONLY
-  (member int_least16_t Message_Block_Index)                ; Message_Block array index
-  (member uint8_t Message_Block[SHA512_Message_Block_Size]) ; 1024-bit message blocks
-  (member int Computed)                                     ; Is the hash computed?
-  (member int Corrupted))                                   ; Cumulative corruption code
+  (member (uint32_t Intermediate_Hash[(/ SHA512HashSize 4)])) ; Message Digest
+  (member (uint32_t Length[4]))                               ; Message length in bits
+  (@else)                                                     ; !USE_32BIT_ONLY
+  (member (uint64_t Intermediate_Hash[(/ SHA512HashSize 8)])) ; Message Digest
+  (member (uint64_t Length_High))
+  (member (uint64_t Length_Low))                              ; Message length in bits
+  (@endif)                                                    ; USE_32BIT_ONLY
+  (member (int_least16_t Message_Block_Index))                ; Message_Block array index
+  (member (uint8_t Message_Block[SHA512_Message_Block_Size])) ; 1024-bit message blocks
+  (member (int Computed))                                     ; Is the hash computed?
+  (member (int Corrupted)))                                   ; Cumulative corruption code
 ```
 ```c
 #define SHA1_ROTL(bits, word) (((word) << (bits)) | ((word) >> (32-(bits)))
@@ -673,20 +673,20 @@ typedef void (*function_pointer_t) (int, int);
 ## Array
 ### Define
 ```lisp
-(variable double amount [5])
+(variable (double amount [5]))
 ```
 ```c
 double amount[5];
 ```
 ### Initialize 
 ```lisp
-(variable int ages [5] . '{22 23 24 25 26})
+(variable (int ages [5] . '{22 23 24 25 26}))
 ```
 ```c
 int ages[5] = {22 23 24 25 26};
 ```
 ```lisp
-(variable int myArray [5])
+(variable (int myArray [5]))
 
 ;; Initializing elements of array seperately
 (for ((int n . 0))
@@ -705,9 +705,9 @@ for(int n = 0; n < sizeof(myArray) / sizeof(int); n++)
 ```
 ## String
 ```lisp
-(variable char name [6] . '{#\C #\l #\o #\u #\d #\Null})
-(variable char name []  . "Cloud")
-(variable char * name   . "Cloud")
+(variable (char name [6] . '{#\C #\l #\o #\u #\d #\Null}))
+(variable (char name []  . "Cloud"))
+(variable (char * name   . "Cloud"))
 ```
 ```c
 char name[6] = {'C', 'l', 'o', 'u', 'd', '\0'};
@@ -726,8 +726,8 @@ char * name  = "Cloud";
 `#\Backspace`
 ## Pointer
 ```lisp
-(variable int * width)
-(variable int * letter)
+(variable (int * width))
+(variable (int * letter))
 ```
 ```c
 int  *width;
@@ -833,12 +833,12 @@ Allocation by `alloc` and equivalent `calloc`:
 Use `$` form for struct's member access and `->` form for member access of pointer of struct.
 ```lisp
 (struct Course
-  (member char WebSite [50])
-  (member char Subject [50])
-  (member int  Price))
+  (member (char WebSite [50]))
+  (member (char Subject [50]))
+  (member (int  Price)))
   
-(variable Course c1 . '{"domain.com" "Compilers" 100})
-(variable Course * pc1 . #'(addressof c1))
+(variable (Course c1 . '{"domain.com" "Compilers" 100}))
+(variable (Course * pc1 . #'(addressof c1)))
   
 (function print_course ()
   (printf "Course: %s in %s for %d$" 
@@ -870,13 +870,13 @@ void print_course () {
 Use `$` form for union's member access and `->` form for member access of pointer of union.
 ```lisp
 (struct USHAContext
-  (member int whichSha)                 ; which SHA is being used
+  (member (int whichSha))                 ; which SHA is being used
   (union
-    (member SHA1Context   sha1Context)
-    (member SHA224Context sha224Context) 
-    (member SHA256Context sha256Context)
-    (member SHA384Context sha384Context) 
-    (member SHA512Context sha512Context)
+    (member (SHA1Context   sha1Context))
+    (member (SHA224Context sha224Context))
+    (member (SHA256Context sha256Context))
+    (member (SHA384Context sha384Context))
+    (member (SHA512Context sha512Context))
     (declares ctx)))
 ```
 ```c
@@ -913,9 +913,9 @@ enum {
 ```lisp
 (guard __STUDENT_H__
   (struct Student
-    (member char name [50])
-    (member char family [50])
-    (member int  class_no)))
+    (member (char name [50]))
+    (member (char family [50]))
+    (member (int  class_no))))
 ```
 ```c
 #ifndef __STUDENT_H__
@@ -934,10 +934,4 @@ typedef struct Student {
 ```c
 typedef int * intptr_t;
 ```
-## C++ Compiler
-C++ compiler could be used instead of C compiler then some features availables:
-* `&` modifier in function argument for pass by reference.
-* Default value for members of structs.
-* `method` form for defining a member function inside of structs.
-
 # Good Luck!

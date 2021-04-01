@@ -6,24 +6,9 @@
 (defvar *operators* '(|+| |-| |*| |/| |%| |==| |!=| |>| |<| |>=| |<=| |^| |xor| |<<| |>>|
 		      |&&| |and| |or| |&| |bitand| |bitor| |->| |$|))
 (defvar *assignments* '(|=| |+=| |-=| |*=| |/=| |%=| |<<=| |>>=|))
-(defvar *modifiers* '(|&| |*| |**|))
+(defvar *modifiers* '(|*| |**|))
 
-(set-dispatch-macro-character
- #\# #\t #'(lambda (stream char1 char2)
-		   (declare (ignore stream char1 char2))
-		   (read-from-string "true")))
-
-(set-dispatch-macro-character
- #\# #\f #'(lambda (stream char1 char2)
-		   (declare (ignore stream char1 char2))
-		   (read-from-string "false")))
-
-(set-macro-character
- #\{ #'(lambda (stream char)
-	 (declare (ignore char))
-	 (read-delimited-list #\} stream t)))
-
-(set-macro-character #\} (get-macro-character #\)) nil)
+(defparameter *default-readtable* (copy-readtable))
 
 (defun reving (list result)
   (cond ((consp list) (reving (cdr list) (cons (car list) result)))
@@ -58,20 +43,64 @@
 (defmacro output (ctrl &rest rest)
   `(format *output* ,ctrl ,@rest))
 
-(defun read-file (path)
+(defmacro with-lcc-readtable (&rest code)
+  `(let ((*readtable* (copy-readtable)))
+     (set-dispatch-macro-character
+	 #\# #\t #'(lambda (stream char1 char2)
+		     (declare (ignore stream char1 char2))
+		     (read-from-string "true")))
+     (set-dispatch-macro-character
+	 #\# #\f #'(lambda (stream char1 char2)
+		     (declare (ignore stream char1 char2))
+		     (read-from-string "false")))
+     (set-macro-character
+	 #\{ #'(lambda (stream char)
+		 (declare (ignore char))
+		 (read-delimited-list #\} stream t)))
+     (set-macro-character #\} (get-macro-character #\)) nil)
+     (set-macro-character
+	 #\" #'(lambda (stream char)
+		 (declare (ignore char))
+		 (with-output-to-string (out)
+					(do ((char (read-char stream nil nil) (read-char stream nil nil)))
+					    ((char= char #\") nil)
+					    (write char :stream out :escape nil)))))
+     (set-macro-character #\| nil nil)
+     (setf (readtable-case *readtable*) :preserve)
+     ,@code))
+
+(defun read-lcc-file (path)
   (let ((targets '()))
     (with-open-file (file path)
-		    (let ((*readtable* (copy-readtable)))
-		      (setf (readtable-case *readtable*) :preserve)
-		      (DO ((target (READ file) (READ file NIL NIL)))
-			((NULL target) T)
-			(PUSH target targets))))
+      (with-lcc-readtable
+	  (DO ((target (READ file) (READ file NIL NIL)))
+	    ((NULL target) T)
+	    (PUSH target targets))))
     (nreverse targets)))
+
+(defun user-symbol (symbol)
+  (with-lcc-readtable
+      (READ-FROM-STRING symbol)))
+
+(defun read-meta-file (path)
+  (let ((meta-data nil))
+    (with-open-file (file path)
+      (setq meta-data (read file nil nil)))
+    (unless (null meta-data) (eval meta-data))))
+
+(defun write-meta-file (path meta-data)
+  (with-open-file (file path
+			:direction :output
+			:if-exists :supersede
+			:if-does-not-exist :create)
+    (write-char #\' file)
+    (write meta-data :stream file :pretty t)))
 
 (defun indent (lvl)
   (make-string (* lvl 2) :initial-element #\Space))
 
 (defun is-name (name)
+  (unless (symbolp name) (return-from is-name nil))
   (let ((name (symbol-name name)))
     (cond ((string= name "const") nil)
 	  ((not (find (char name 0) "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")) nil)
@@ -102,3 +131,9 @@
 	 (list '[ (car (read-delimited-list #\] stream t)) '])))
 
 (set-macro-character #\] (get-macro-character #\)) nil)
+
+(defun class-name< (class-name)
+  (format nil "__lcc_~A__" class-name))
+
+(defun method-name< (class-name method-name)
+  (format nil "__lcc_~A_~A__" class-name method-name))

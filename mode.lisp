@@ -52,6 +52,8 @@
    (1 . new)
    (1 . printf)
    (1 . scanf)
+   (1 . override)
+   (1 . import)
    ))
 
 (defun lcc-add-attributes (face-name keyword-rules)

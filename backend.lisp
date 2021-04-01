@@ -30,16 +30,16 @@
 	((null (nth 1 desc)) "[]")
 	(t (format nil "[~A]" (compile-form< (nth 1 desc) globals)))))
 
-(defun format-type< (const typeof modifier const-ptr name array-def globals &optional anonymous)
+(defun format-type< (const typeof modifier const-ptr name array-def &optional anonymous)
   (when anonymous (setq name (format nil "/* ~A */" name)))
   (format nil "~:[~;const ~]~A~:[~; ~:*~A~]~:[~; const~]~:[~*~; ~A~]~:[~; ~A~]"
-	  const (compile-type-name< typeof) modifier const-ptr
-	  name name array-def (compile-array< array-def globals)))
+	  const typeof modifier const-ptr name name array-def array-def))
 
 (defun compile-type< (desc globals &optional no-text)
   (multiple-value-bind (const typeof modifier const-ptr name array-def)
     (specify-type< desc globals)
-      (values (if no-text nil (format-type< const typeof modifier const-ptr name array-def globals))
+    (values (if no-text nil (format-type< const typeof modifier const-ptr name
+					  (compile-array< array-def globals)))
 	      const typeof modifier const-ptr name array-def)))
 
 (defun compile-spec-type< (spec globals &optional no-text)
@@ -50,19 +50,21 @@
 	(name      (name      spec))
 	(array-def (array-def spec))
 	(anonymous (anonymous spec)))
-    (values (if no-text nil (format-type< const typeof modifier const-ptr name array-def globals anonymous))
+    (values (if no-text nil (format-type< const typeof modifier const-ptr name
+					  (compile-array< array-def globals) anonymous))
 	    const typeof modifier const-ptr name array-def)))
 
 (defun format-type-value< (const typeof modifier const-ptr name array-def default globals &optional anonymous)
   (when anonymous (setq name (format nil "/* ~A */" name)))
   (let ((cvalue (compile-form< default globals)))
-    (format nil "~A~:[~; = ~A~]" (format-type< const typeof modifier const-ptr name array-def globals)
+    (format nil "~A~:[~; = ~A~]" (format-type< const typeof modifier const-ptr name array-def)
 	    (not (null cvalue)) cvalue)))
 
 (defun compile-type-value< (desc globals &optional no-text)
   (multiple-value-bind (const typeof modifier const-ptr name array-def default)
     (specify-type-value< desc globals)
-      (values (if no-text nil (format-type-value< const typeof modifier const-ptr name array-def default globals))
+    (values (if no-text nil (format-type-value< const typeof modifier const-ptr name
+						(compile-array< array-def globals) default globals))
 	      const typeof modifier const-ptr name array-def default)))
 
 (defun compile-spec-type-value< (spec globals &optional no-text)
@@ -74,7 +76,8 @@
 	(array-def (array-def spec))
 	(default   (default   spec))
 	(anonymous (anonymous spec)))
-    (values (if no-text nil (format-type-value< const typeof modifier const-ptr name array-def default globals anonymous))
+    (values (if no-text nil (format-type-value< const typeof modifier const-ptr name
+						(compile-array< array-def globals) default globals anonymous))
 	    const typeof modifier const-ptr name array-def default)))
 
 (defun compile-atom< (obj globals)
@@ -86,11 +89,15 @@
 	((and (symbolp obj) (is-symbol obj))
 	 (if (eql (char (symbol-name obj) 0) #\0)
 	     (format nil "~A" obj)
-	   (if (gethash obj globals nil)
-	       (format nil "~A" obj)
-	     (progn
-	       (format t "lcc: [warning] undefined variable ~A~%" obj)
-	       (format nil "~A" obj)))))
+	   (let ((spec (gethash obj globals nil)))
+	     (if spec
+		 (progn
+		   (if (eql (construct spec) '|@CLASS|)
+		       (format nil "~A *" (class-name< obj))
+		     (format nil "~A" obj)))
+	       (progn
+		 (format t "lcc: [warning] undefined variable ~A~%" obj)
+		 (format nil "~A" obj))))))
 	(t (error (format nil "syntax error \"~A\"" obj)))))
 
 (defun compile-unary< (form globals)
@@ -149,6 +156,25 @@
 	  (compile-type< (nth 1 form) globals)
 	  (compile-form< (nth 2 form) globals)))
 
+(defun compile-new-form< (form globals)
+  (when (< (length form) 2) (error (format nil "wrong new form ~A" form)))
+  (let ((cls   (gethash (nth 1 form) globals nil))
+	(ctors '()))
+    (when (null cls) (error (format nil "undefined class ~A in form ~A" cls form)))
+    (maphash #'(lambda (name spec)
+		 (when (and (eql (construct spec) '|@FUNCTION|) (eql (default spec) :ctor))
+		   (push spec ctors)))
+	     (inners cls))
+    (dolist (ctor ctors)
+      (when (= (hash-table-count (params ctor)) (- (length form) 2))
+	(let ((args '()))
+	  (dolist (arg (cddr form))
+	    (push (compile-form< arg globals) args))
+	(return-from compile-new-form< (format nil "~A(~{~A~^, ~})"
+					       (method-name< (name cls) (name ctor))
+					       (reverse args))))))
+    (error (format nil "not found matched costructor for class ~A in form ~A" (name cls) form))))
+
 (defun compile-form< (form globals)
   (handler-case
       (if (atom form) (compile-atom< form globals)
@@ -161,9 +187,10 @@
 		((and (> (length form) 2) (key-eq func '\|)) (compile-operator< form globals))
 		((and (= (length form) 2) (find func *unaries* :test #'key-eq))   (compile-unary< form globals))
 		((and (> (length form) 2) (find func *operators* :test #'key-eq)) (compile-operator< form globals))
-		((key-eq func '|nth|)    (compile-nth-form< form globals)) 
-		((key-eq func '|?|)      (compile-?-form< form globals)) 
+		((key-eq func '|nth|)    (compile-nth-form<  form globals)) 
+		((key-eq func '|?|)      (compile-?-form<    form globals)) 
 		((key-eq func '|cast|)   (compile-cast-form< form globals))
+		((key-eq func '|new|)    (compile-new-form<  form globals))
 		(t (if (gethash func globals nil)
 		       (format nil "~A(~{~A~^, ~})" func (mapcar #'(lambda (f) (compile-form< f globals)) (cdr form)))
 		     (progn
@@ -226,13 +253,18 @@
 (defun compile-for-form (form lvl globals)
   (when (or (< (length form) 3) (not (listp (nth 1 form)))) (error (format nil "wrong for form ~A" form)))
   (output "~&~Afor (" (indent lvl))
-  (let ((inits '()))
-    (dolist (type (nth 1 form))
-      (unless (and (not (null type)) (listp type)) (error (format nil "wrong variable definition form ~A" form)))
-      (push (compile-type-value< type globals) inits))
-    (output "~{~A~^, ~}; ~A;) {~%" (nreverse inits) (compile-form< (nth 2 form) globals)))
-  (compile-body (nthcdr 3 form) (+ lvl 1) globals)
-  (output "~&~A}~%" (indent lvl)))
+  (let ((inits '())
+	(locals (copy-specifiers globals)))
+    (dolist (type-desc (nth 1 form))
+      (unless (and (not (null type-desc)) (listp type-desc)) (error (format nil "wrong for form variable definition ~A" form)))
+      (multiple-value-bind (text const typeof modifier const-ptr variable array value)
+	(compile-type-value< type-desc globals t)
+	(setf (gethash variable locals)
+	      (make-specifier variable '|@VARIABLE| const typeof modifier const-ptr array value nil))
+	(push (format-type-value< const typeof modifier const-ptr variable array value locals) inits)))
+    (output "~{~A~^, ~}; ~A;) {~%" (nreverse inits) (compile-form< (nth 2 form) locals))
+    (compile-body (nthcdr 3 form) (+ lvl 1) locals)
+    (output "~&~A}~%" (indent lvl))))
 
 (defun compile-for-each-form (form lvl globals)
   (when (or (< (length form) 4) (not (listp (nth 1 form)))) (error (format nil "wrong for each form ~A" form)))
@@ -314,7 +346,7 @@
 				     (output "(~{~A~^, ~});"
 					     (mapcar #'(lambda (f) (compile-form< f locals)) (cdr form)))))))))))
 
-(defun compile-variable (spec lvl globals)
+(defun compile-variable (spec lvl globals &optional memberof)
   (let ((is-auto     nil)
 	(is-register nil)
 	(is-static   nil)
@@ -327,19 +359,26 @@
 	('|extern|   (setq is-extern t))))
     (let ((text (compile-spec-type-value< spec globals)))
       (output "~&~A~:[~;extern ~]~:[~;static ~]~:[~;register ~]~:[~;auto ~]~A;~%"
-	(indent lvl) is-extern is-static is-register is-auto text))))
+	      (indent lvl) is-extern is-static is-register is-auto text))))
 
-(defun compile-function (spec lvl globals)
+(defun compile-function (spec lvl globals &optional methodof &key no-body)
   (let* ((is-static  nil)
 	 (is-declare nil)
 	 (is-inline  nil)
 	 (is-extern  nil)
-	 (name       (name spec))
-	 (params   (params spec))
-	 (body     (body   spec))
-	 (locals       (copy-specifiers globals))
-	 (ret      (format-type< (const spec) (typeof spec) (modifier spec) nil
-				 (const-ptr spec) (array-def spec) locals)))
+	 (name       (if (not (null methodof)) (method-name< (name methodof) (name spec)) (name spec)))
+	 (params     (params spec))
+	 (body       (body   spec))
+	 (locals     (copy-specifiers globals))
+	 (ret        (format-type< (const spec) (compile-atom< (typeof spec) locals) (modifier spec) nil
+				   (const-ptr spec) (array-def spec))))
+    (unless (null methodof)
+      (setf (gethash (user-symbol "this") locals)
+	    (make-specifier (user-symbol "this") '|@VARIABLE| nil (name methodof)
+			    (user-symbol "*") (user-symbol "const") nil nil nil)))
+    (setf (gethash (user-symbol "_LCC_FUNCTION_") locals)
+	  (make-specifier (user-symbol "_LCC_FUNCTION_") '|@VARIABLE| (user-symbol "const")
+			  (user-symbol "char") (user-symbol "*") (user-symbol "const") nil (name spec) '(|static|)))
     (maphash #'(lambda (in-name in-spec)
 		 (case (construct in-spec)
 		   ('|@PARAMETER| (setf (gethash in-name locals) in-spec))
@@ -357,18 +396,33 @@
       (maphash #'(lambda (name param)
 		   (push (compile-spec-type-value< param locals) cparams))
 	       params)
-      (output "~{~A~^, ~})~:[ {~;;~]~%" (nreverse cparams) is-declare))
-    (if is-declare
+      (unless (or (null methodof) (eql (default spec) :ctor))
+	(output "~A * const this~:[~;, ~]" (class-name< (name methodof)) (> (length cparams) 0)))
+      (output "~{~A~^, ~})~:[ {~;;~]~%" (nreverse cparams) (or is-declare no-body)))
+    (if (and is-declare (null methodof))
 	(progn
 	  (output "~&typedef ~A (*~A_t)" ret name)
 	  (let ((cparams '()))
 	    (maphash #'(lambda (name param)
 			 (push (format-type< (const spec) (typeof spec) (modifier spec) nil
-					     (const-ptr spec) (array-def spec) locals) cparams))
+					     (const-ptr spec) (array-def spec)) cparams))
 		     params)
 	    (output " (~{~A~^, ~});~%" (nreverse cparams))))
-      (progn
+      (unless no-body
+	(unless (null methodof)
+	  (when (eql (default spec) :ctor)
+	    (let ((cls (class-name< (name methodof))))
+	      (output "~&~A~A * const this = (~A *)(malloc(sizeof(~A)));" (indent (+ 1 lvl)) cls cls cls)
+	      (output "~&~Aif (this == NULL) {~%" (indent (+ 1 lvl)))
+	      (output "~&~Aprintf(\"dynamic memory allocation failed! ~A::~A\\n\");~%" (indent (+ 2 lvl)) cls name)
+	      (output "~&~Areturn NULL;~%" (indent (+ 2 lvl)))
+	      (output "~&~A}~%" (indent (+ 1 lvl)))))
+	  (output "~&~Astatic const char * const _LCC_CLASS_ = ~S;~%" (indent (+ 1 lvl)) (symbol-name (name methodof))))  
+	(output "~&~Astatic const char * const _LCC_FUNCTION_ = ~S;~%" (indent (+ 1 lvl)) (symbol-name (name spec)))
 	(compile-body body (+ lvl 1) locals)
+	(unless (null methodof)
+	  (when (eql (default spec) :ctor)
+	    (output "~&~Areturn this;~%" (indent (+ 1 lvl)))))
 	(output "~&~A}~%" (indent lvl))))))
 
 (defun compile-preprocessor (spec lvl globals)
@@ -379,8 +433,8 @@
 
 (defun compile-include (spec lvl globals)
   (let ((header (name spec)))
-    (cond ((symbolp header) (output "~&#include ~A" header))
-	  ((stringp header) (output "~&#include ~S" header))
+    (cond ((symbolp header) (output "~&#include ~A~%" header))
+	  ((stringp header) (output "~&#include ~S~%" header))
 	  (t (error "wrong inclusion")))))
 
 (defun compile-typedef (spec lvl globals)
@@ -439,7 +493,6 @@
 		 (case (construct in-spec)
 		   ('|@PREPROC|  (compile-preprocessor in-spec (+ 1 lvl) locals))
 		   ('|@VARIABLE| (compile-variable     in-spec (+ 1 lvl) locals))
-		   ('|@FUNCTION| (compile-function     in-spec (+ 1 lvl) locals))
 		   ('|@ENUM|     (compile-enum         in-spec (+ 1 lvl) locals))
 		   ('|@STRUCT|   (compile-struct       in-spec (+ 1 lvl) locals))
 		   ('|@UNION|    (compile-union        in-spec (+ 1 lvl) locals))
