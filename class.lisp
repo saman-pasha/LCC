@@ -149,7 +149,7 @@
 		(when (key-eq custom '|true|)
 		  (setq custom '()))
 		(setq custom (list "-c" defs-file
-				   "-o" (format nil "~A.o" (class-name< name)))))
+				   "-o" (format nil "~A.o" (class-name< name))))
 		(uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))
 	(when (key-eq (nth i args) ':|link|)
 	  (let* ((command   (getf *configs* 'linker))
@@ -161,6 +161,6 @@
 		(when (key-eq custom '|true|)
 		  (setq custom '()))
 		(setq custom (list "-o" (format nil (getf *configs* 'library) (class-name< name))
-				   (format nil (getf *configs* 'object) (class-name< name)))))
+				   (format nil (getf *configs* 'object) (class-name< name))))
 		(uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))))
     (setq *output* t)))
