@@ -298,9 +298,7 @@ main ()
 ```
 ## Program Structure
 lcc program involves one or many `target` or `class` form.
-`target` form translates it's contents forms to C code but `class` form compiles it's definition in OOP manner.
-each `target` must has a target c file and a list of feature arguments.
-each `class` must has a name and a list of feature arguments.
+`target` form translates it's contents forms to C code but `class` form compiles it's definition in OOP manner. Each `target` must has a target C file and a list of feature arguments. Each `class` must has a name and a list of feature arguments.
 ### Features
 All features could be omitted or each one if available accepts `#t` for default behaviour or `#f` for do nothing.
 * <b>:std</b>: writes standard libraries inclusion at top of `target` file or `class` generated C file.
@@ -318,7 +316,7 @@ All features could be omitted or each one if available accepts `#t` for default 
 #include <stdbool.h>
 ```
 * <b>:compile</b>: used for compiling target or class. Dafault behaviour for targets is `-c target.c` for classes is `-c Class.c -o Class.o`. For target custom compilation just set a list of arguments that will be sent to compiler which has been set in `lcc-config.lisp` and overrides default behaviour. For class custom compilation just set a list of arguments that will be sent to compiler which has been set in `lcc-config.lisp` but does not overrides default behaviour and just appends to it.
-* <b>:link</b>: used for linking and builing target or class as library or executable. For targets It has not dfault behaviour, for classes default behaviour is `-o libClass.la Class.lo` to creating library of each class. For target custom linking just set a list of arguments that will be sent to linker which has been set in `lcc-config.lisp`. For class custom linking just set a list of arguments that will be sent to linker which has been set in `lcc-config.lisp` but but does not overrides default behaviour and just appends to it.
+* <b>:link</b>: used for linking and builing target or class as library or executable. For targets It has not dfault behaviour, for classes default behaviour is `-o libClass.la Class.lo` to creating library of each class. For target custom linking just set a list of arguments that will be sent to linker which has been set in `lcc-config.lisp`. For class custom linking just set a list of arguments that will be sent to linker which has been set in `lcc-config.lisp` but does not overrides default behaviour and just appends to it.
 ```lisp
 ;; MyMath library declaration
 (target "mymath.h"
