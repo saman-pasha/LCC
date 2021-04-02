@@ -133,7 +133,7 @@
 (set-macro-character #\] (get-macro-character #\)) nil)
 
 (defun class-name< (class-name)
-  (format nil "__lcc_~A__" class-name))
+  (format nil (getf *configs* 'class) class-name))
 
 (defun method-name< (class-name method-name)
   (format nil "__lcc_~A_~A__" class-name method-name))

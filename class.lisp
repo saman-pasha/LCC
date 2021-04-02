@@ -48,9 +48,9 @@
 
 (defun compile-class (spec globals)
   (let* ((name      (name spec))
-	 (decl-file (format nil "__lcc_~A__.h" name))
-	 (defs-file (format nil "__lcc_~A__.c" name))
-	 (meta-file (format nil "__lcc_~A__.m" name))
+	 (decl-file (format nil "~A.h" (class-name< name)))
+	 (defs-file (format nil "~A.c" (class-name< name)))
+	 (meta-file (format nil "~A.m" (class-name< name)))
 	 (args      (attrs spec))
 	 (locals    (copy-specifiers globals)))
     (setf (gethash (user-symbol "_LCC_CLASS_") locals)
@@ -85,7 +85,7 @@
 			 ('|@PREPROC| (compile-preprocessor in-spec 0 locals))
 			 ('|@INCLUDE| (compile-include      in-spec 0 locals))
 			 ('|@IMPORT|  (setf (gethash in-name locals)
-					    (load-specifier (read-meta-file (format nil "__lcc_~A__.m" in-name)))))
+					    (load-specifier (read-meta-file (format nil "~A.m" (class-name< in-name))))))
 			 (otherwise nil)))
 		   (inners spec))
 	  (output "typedef struct ~A {~%" (class-name< name))
@@ -146,8 +146,10 @@
 		 (custom    (nth (+ i 1) args)))
 	    (unless (key-eq custom '|false|)
 	      (progn
-		(when (key-eq custom '|true|) (setq custom (list "-c" defs-file
-								 "-o" (format nil "~A.o" (class-name< name)))))
+		(when (key-eq custom '|true|)
+		  (setq custom '()))
+		(setq custom (list "-c" defs-file
+				   "-o" (format nil "~A.o" (class-name< name)))))
 		(uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))
 	(when (key-eq (nth i args) ':|link|)
 	  (let* ((command   (getf *configs* 'linker))
@@ -156,7 +158,9 @@
 		 (custom    (nth (+ i 1) args)))
 	    (unless (key-eq custom '|false|)
 	      (progn
-		(when (key-eq custom '|true|) (setq custom (list "-o" (format nil "lib~A.la" (class-name< name))
-								 (format nil "~A.lo" (class-name< name)))))
+		(when (key-eq custom '|true|)
+		  (setq custom '()))
+		(setq custom (list "-o" (format nil (getf *configs* 'library) (class-name< name))
+				   (format nil (getf *configs* 'object) (class-name< name)))))
 		(uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))))
     (setq *output* t)))

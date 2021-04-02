@@ -2,7 +2,7 @@
 Lisp C Compiler, Lisp-like syntax for writing C code in addition of some forms and pointer managements.
 ## Instruction
 * Install [SBCL](www.sbcl.org).
-* lcc as default uses [Libtool](https://www.gnu.org/software/libtool) for compiling and linking `C` code. If you like it just install it for your platform and put it in the `PATH` environment variable. Compiler and linker could be set in `lcc-config.lisp` file.
+* Install [Libtool](https://www.gnu.org/software/libtool) for compiling and linking `C` code. Put it in the `PATH` environment variable. Compiler and linker could be set in `lcc-config.lisp` file.
 * Download and copy lcc folder to `~/common-lisp` for enabling [ASDF](https://common-lisp.net/project/asdf) access to lcc package.
 * Write your own lcc code and save it in `.lcc` or `.lisp` extension.
 * Copy `lcc.lisp` file from source folder into your project path.
@@ -19,7 +19,7 @@ double total;
 ```
 ## Constants
 ```lisp
-(variable const int SIDE . 10)
+(variable (const int SIDE . 10))
 ```
 ```c
 const int SIDE = 10;
@@ -297,12 +297,13 @@ main ()
 }
 ```
 ## Program Structure
-lcc program involves one or many target form.
-targets are translating it's content forms to C code.
-each target must has a target c file, and a list of feature arguments.
+lcc program involves one or many `target` or `class` form.
+`target` form translates it's contents forms to C code but `class` form compiles it's definition in OOP manner.
+each `target` must has a target c file and a list of feature arguments.
+each `class` must has a name and a list of feature arguments.
 ### Features
-All features could be omitted or if available accept `#t` for default behaviour or `#f` for do nothing.
-* <b>:std</b>: writes standard libraries inclusion at top of target file.
+All features could be omitted or each one if available accepts `#t` for default behaviour or `#f` for do nothing.
+* <b>:std</b>: writes standard libraries inclusion at top of `target` file or `class` generated C file.
 ```lisp
 (target "main.c"
   (:std #t)
@@ -316,8 +317,8 @@ All features could be omitted or if available accept `#t` for default behaviour 
 #include <stdlib.h>
 #include <stdbool.h>
 ```
-* <b>:compile</b>: used for compiling target file. Dafault behaviour is `-c target.c`. Could be a list of arguments that will be sent to compiler which has been set in `lcc-config.lisp`.
-* <b>:link</b>: used for linking and builing target file as library or executable. It has not dfault behaviour. Could be a list of arguments that will be sent to linker which has been set in `lcc-config.lisp`.
+* <b>:compile</b>: used for compiling target or class. Dafault behaviour for targets is `-c target.c` for classes is `-c __lcc_Class__.c -o __lcc_Class__.o`. For target custom compilation just set a list of arguments that will be sent to compiler which has been set in `lcc-config.lisp` and overrides default behaviour. For class custom compilation just set a list of arguments that will be sent to compiler which has been set in `lcc-config.lisp` but does not overrides default behaviour and just appends to it.
+* <b>:link</b>: used for linking and builing target or class as library or executable. For targets It has not dfault behaviour, for classes default behaviour is `-o lib__lcc_Class__.la __lcc_Class__.lo` to creating library of each class. For target custom linking just set a list of arguments that will be sent to linker which has been set in `lcc-config.lisp`. For class custom linking just set a list of arguments that will be sent to linker which has been set in `lcc-config.lisp` but but does not overrides default behaviour and just appends to it.
 ```lisp
 ;; MyMath library declaration
 (target "mymath.h"
