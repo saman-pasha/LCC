@@ -33,7 +33,7 @@
 (defun format-type< (const typeof modifier const-ptr name array-def &optional anonymous)
   (when anonymous (setq name (format nil "/* ~A */" name)))
   (format nil "~:[~;const ~]~A~:[~; ~:*~A~]~:[~; const~]~:[~*~; ~A~]~:[~; ~A~]"
-	  const typeof modifier const-ptr name name array-def array-def))
+	  const typeof modifier const-ptr name name (if (null array-def) nil (> (length array-def) 0)) array-def))
 
 (defun compile-type< (desc globals &optional no-text)
   (multiple-value-bind (const typeof modifier const-ptr name array-def)
@@ -355,7 +355,7 @@
       (case attr
 	('|auto|     (setq is-auto t))
 	('|register| (setq is-register t))
-	('|static|   (setq is-static t))
+	('|static|   (when (null memberof) (setq is-static t)))
 	('|extern|   (setq is-extern t))))
     (let ((text (compile-spec-type-value< spec globals)))
       (output "~&~A~:[~;extern ~]~:[~;static ~]~:[~;register ~]~:[~;auto ~]~A;~%"
@@ -367,14 +367,26 @@
 	 (is-inline  nil)
 	 (is-extern  nil)
 	 (name       (if (not (null methodof)) (method-name< (name methodof) (name spec)) (name spec)))
+	 (is-static-method nil)
 	 (params     (params spec))
 	 (body       (body   spec))
 	 (locals     (copy-specifiers globals))
 	 (ret        (format-type< (const spec) (compile-atom< (typeof spec) locals) (modifier spec) nil
 				   (const-ptr spec) (array-def spec))))
+    (dolist (attr (attrs spec))
+      (case attr
+	('|static|
+	 (unless (null methodof) (setq is-static-method t))
+	 (when   (null methodof) (setq is-static t)))
+	('|declare| (setq is-declare t))
+	('|inline|  (setq is-inline  t))
+	('|extern|  (setq is-extern  t))))
     (unless (null methodof)
       (setf (gethash (user-symbol "this") locals)
 	    (make-specifier (user-symbol "this") '|@VARIABLE| nil (name methodof)
+			    (user-symbol "*") (user-symbol "const") nil nil nil))
+      (setf (gethash (user-symbol "class") locals)
+	    (make-specifier (user-symbol "class") '|@VARIABLE| nil (name methodof)
 			    (user-symbol "*") (user-symbol "const") nil nil nil)))
     (setf (gethash (user-symbol "_LCC_FUNCTION_") locals)
 	  (make-specifier (user-symbol "_LCC_FUNCTION_") '|@VARIABLE| (user-symbol "const")
@@ -384,12 +396,6 @@
 		   ('|@PARAMETER| (setf (gethash in-name locals) in-spec))
 		   (otherwise nil)))
 	     (params spec))
-    (dolist (attr (attrs spec))
-      (case attr
-	('|static|  (setq is-static  t))
-	('|declare| (setq is-declare t))
-	('|inline|  (setq is-inline  t))
-	('|extern|  (setq is-extern  t))))
     (output "~&~A~:[~;extern ~]~:[~;inline ~]~:[~;static ~]~A ~A ("
       (indent lvl) is-extern is-inline is-static ret name)
     (let ((cparams '()))
@@ -397,7 +403,8 @@
 		   (push (compile-spec-type-value< param locals) cparams))
 	       params)
       (unless (or (null methodof) (eql (default spec) :ctor))
-	(output "~A * const this~:[~;, ~]" (class-name< (name methodof)) (> (length cparams) 0)))
+	(unless is-static-method
+	  (output "~A * const this~:[~;, ~]" (class-name< (name methodof)) (> (length cparams) 0))))
       (output "~{~A~^, ~})~:[ {~;;~]~%" (nreverse cparams) (or is-declare no-body)))
     (if (and is-declare (null methodof))
 	(progn
@@ -417,7 +424,10 @@
 	      (output "~&~Aprintf(\"dynamic memory allocation failed! ~A::~A\\n\");~%" (indent (+ 2 lvl)) cls name)
 	      (output "~&~Areturn NULL;~%" (indent (+ 2 lvl)))
 	      (output "~&~A}~%" (indent (+ 1 lvl)))))
-	  (output "~&~Astatic const char * const _LCC_CLASS_ = ~S;~%" (indent (+ 1 lvl)) (symbol-name (name methodof))))  
+	  (output "~&~Astruct ~A * const class = &~A;" (indent (+ 1 lvl))
+		  (static-class-name< (name methodof)) (static-variable-name< (name methodof)))
+	  (output "~&~Astatic const char * const _LCC_CLASS_ = __lcc_~A_class__;~%"
+		  (indent (+ 1 lvl)) (symbol-name (name methodof)) (name methodof)))  
 	(output "~&~Astatic const char * const _LCC_FUNCTION_ = ~S;~%" (indent (+ 1 lvl)) (symbol-name (name spec)))
 	(compile-body body (+ lvl 1) locals)
 	(unless (null methodof)

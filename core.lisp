@@ -132,8 +132,28 @@
 
 (set-macro-character #\] (get-macro-character #\)) nil)
 
+(defun extract_class_name< (full-name)
+  (if (listp full-name)
+      (let ((len (length full-name)))
+	(nth (- len 1) full-name))
+      full-name))
+
+(defun class_path< (full-name)
+  (if (listp full-name)
+      (format nil "~{~A~^/~}" (subseq full-name 0 (- (length full-name) 1)))
+    ""))
+
 (defun class-name< (class-name)
   (format nil (getf *configs* 'class) class-name))
 
 (defun method-name< (class-name method-name)
   (format nil "__lcc_~A_~A__" class-name method-name))
+
+(defun static-class-name< (class-name)
+  (format nil "__lcc_~A_static__" class-name))
+
+(defun static-variable-name< (class-name)
+  (format nil "__lcc_~A_static_i__" class-name))
+
+(defun static-method-name< (class-name method-name)
+  (format nil "__lcc_~A_~A_static__" class-name method-name))
