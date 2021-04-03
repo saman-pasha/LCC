@@ -320,9 +320,15 @@
 
 (defun specify-import (def attrs lvl ir)
   (when (> (length attrs) 0) (error (format nil "wrong import attributes ~A" attrs)))
-  (let ((heads (cdr def)))
+  (let ((heads (nth 1 def))
+	(args  (nthcdr 2))
+	(abbr  heads))
+    (dotimes (i (length args))
+      (when (zerop (mod i 2))
+	(when (key-eq (nth i args) ':|as|)
+	  (setq (abbr (nth (+ i 1) args))))))
     (if (every #'symbolp heads)
-	(specify heads ir (make-specifier heads '|@IMPORT| nil nil nil nil nil nil nil))
+	(specify abbr ir (make-specifier heads '|@IMPORT| nil nil nil nil nil nil nil))
       (error "wrong importing"))))
 
 (defun specify-typedef (def attrs lvl ir)
