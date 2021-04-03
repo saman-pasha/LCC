@@ -106,7 +106,7 @@
 		 (format nil "~A" obj))))))
 	(t (error (format nil "syntax error \"~A\"" obj)))))
 
-(defun compile-type-name< (typeof globals)
+(defun compile-type-decl< (typeof globals)
   (let ((type-spec (gethash typeof globals nil)))
     (if type-spec
 	(if (or (eql (construct type-spec) '|@CLASS|)
@@ -353,7 +353,7 @@
 			 (make-specifier variable '|@VARIABLE| const typeof modifier const-ptr array value attributes)))
 		 (output "~&~A~:[~;static ~]~:[~;register ~]~:[~;auto ~]~A;" (indent (+ lvl 1))
 			 is-static is-register is-auto
-			 (format-type-value< const (compile-type-name< typeof globals)
+			 (format-type-value< const (compile-type-decl< typeof globals)
 					     modifier const-ptr variable array value locals)))
 	       (setq is-static nil))))
     (dolist (variable (reverse dynamics))
