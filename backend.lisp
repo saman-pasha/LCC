@@ -224,7 +224,6 @@
 	    (let ((type-spec (gethash (typeof var-spec) globals nil)))
 	      (if (null type-spec)
 		  (progn
-		    (display form)
 		    (format t "lcc: [warning] call method of undefined type ~A~%" (typeof var-spec) form)
 		    (format nil "~A(~{~A~^, ~})" method (mapcar #'(lambda (f) (compile-form< f globals)) (cdr form))))
 		(let ((fun-spec (gethash method (inners type-spec) nil)))
