@@ -167,11 +167,22 @@
 	  (compile-form< (nth 2 form) globals)
 	  (compile-form< (nth 3 form) globals)))
 
+(defun compile-sizeof-form< (form globals)
+  (unless (= (length form) 2) (error (format nil "wrong sizeof form ~A" form)))
+  (multiple-value-bind (text const typeof modifier const-ptr variable array)
+    (compile-type< (nth 1 form) globals t)
+    (when variable (error (format nil "wrong cast ~A" form)))
+    (format nil "sizeof(~A)"
+	    (format-type< const (compile-type-decl< typeof globals) modifier const-ptr variable array globals))))
+
 (defun compile-cast-form< (form globals)
   (unless (= (length form) 3) (error (format nil "wrong cast form ~A" form)))
-  (format nil "((~A)~A)"
-	  (compile-type< (nth 1 form) globals)
-	  (compile-form< (nth 2 form) globals)))
+  (multiple-value-bind (text const typeof modifier const-ptr variable array)
+    (compile-type< (nth 1 form) globals t)
+    (when variable (error (format nil "wrong cast ~A" form)))
+    (format nil "((~A)~A)"
+	    (format-type< const (compile-type-decl< typeof globals) modifier const-ptr variable array globals)
+	    (compile-form< (nth 2 form) globals))))
 
 (defun compile-new-form< (form globals)
   (when (< (length form) 2) (error (format nil "wrong new form ~A" form)))
@@ -213,7 +224,8 @@
 	    (let ((type-spec (gethash (typeof var-spec) globals nil)))
 	      (if (null type-spec)
 		  (progn
-		    (format t "lcc: [warning] undefined type ~A~%" (typeof var-spec) form)
+		    (display form)
+		    (format t "lcc: [warning] call method of undefined type ~A~%" (typeof var-spec) form)
 		    (format nil "~A(~{~A~^, ~})" method (mapcar #'(lambda (f) (compile-form< f globals)) (cdr form))))
 		(let ((fun-spec (gethash method (inners type-spec) nil)))
 		  (when (or (null fun-spec) (not (eql (construct fun-spec) '|@FUNCTION|)))
@@ -236,11 +248,12 @@
 		((and (> (length form) 2) (key-eq func '\|)) (compile-operator< form globals))
 		((and (= (length form) 2) (find func *unaries* :test #'key-eq))   (compile-unary< form globals))
 		((and (> (length form) 2) (find func *operators* :test #'key-eq)) (compile-operator< form globals))
-		((key-eq func '|nth|)    (compile-nth-form<  form globals)) 
-		((key-eq func '|?|)      (compile-?-form<    form globals)) 
-		((key-eq func '|cast|)   (compile-cast-form< form globals))
-		((key-eq func '|new|)    (compile-new-form<  form globals))
-		(t                       (compile-call-form< form globals))))) 
+		((key-eq func '|nth|)    (compile-nth-form<    form globals)) 
+		((key-eq func '|?|)      (compile-?-form<      form globals)) 
+		((key-eq func '|sizeof|) (compile-sizeof-form< form globals))
+		((key-eq func '|cast|)   (compile-cast-form<   form globals))
+		((key-eq func '|new|)    (compile-new-form<    form globals))
+		(t                       (compile-call-form<   form globals))))) 
     (error (ex)
 	   (error (format nil "~&~A -> ~A~%" ex form)))))
 
@@ -416,7 +429,7 @@
 	 (params     (params spec))
 	 (body       (body   spec))
 	 (locals     (copy-specifiers globals))
-	 (ret        (format-type< (const spec) (compile-atom< (typeof spec) locals) (modifier spec) nil
+	 (ret        (format-type< (const spec) (compile-type-decl< (typeof spec) globals) (modifier spec) nil
 				   (const-ptr spec) (array-def spec))))
     (dolist (attr (attrs spec))
       (case attr
