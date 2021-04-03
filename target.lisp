@@ -50,11 +50,12 @@
 
 (defun compile-target (spec globals)
   (let ((file (format nil "~A" (name spec)))
-	(args (attrs spec)))
+	(args (attrs spec))
+	(cwd (uiop:getcwd)))
     (case file
       ((|t|) (setq *output* t))
       (otherwise (setq *output*
-		       (open file
+		       (open (format nil "~A~A" cwd file)
 			     :direction :output
 			     :if-does-not-exist :create
 			     :if-exists :supersede))))

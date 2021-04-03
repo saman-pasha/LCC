@@ -100,24 +100,25 @@
   (make-string (* lvl 2) :initial-element #\Space))
 
 (defun is-name (name)
-  (unless (symbolp name) (return-from is-name nil))
-  (let ((name (symbol-name name)))
-    (cond ((string= name "const") nil)
-	  ((not (find (char name 0) "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")) nil)
-	  (t (progn
-	       (dotimes (i (- (length name) 1))
-		 (unless (find (char name (+ i 1)) "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")
-		   (return-from is-name nil)))
-	       t)))))
+  (when (symbolp name)
+    (let ((name (symbol-name name)))
+      (cond ((string= name "const") nil)
+	    ((not (find (char name 0) "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_")) nil)
+	    (t (progn
+		 (dotimes (i (- (length name) 1))
+		   (unless (find (char name (+ i 1)) "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")
+		     (return-from is-name nil)))
+		 t))))))
 
 (defun is-symbol (name)
-  (let ((name (symbol-name name)))
-    (cond ((string= name "const") nil)
-	  (t (progn
-	       (dotimes (i (length name))
-		 (unless (find (char name i) "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")
-		   (return-from is-symbol nil)))
-	       t)))))
+  (when (symbolp name)
+    (let ((name (symbol-name name)))
+      (cond ((string= name "const") nil)
+	    (t (progn
+		 (dotimes (i (length name))
+		   (unless (find (char name i) "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_1234567890")
+		     (return-from is-symbol nil)))
+		 t))))))
 
 (defun key-eq (symbol1 symbol2)
   (and (symbolp symbol1) (symbolp symbol2) (string-equal (symbol-name symbol1) (symbol-name symbol2))))
@@ -132,28 +133,70 @@
 
 (set-macro-character #\] (get-macro-character #\)) nil)
 
-(defun extract_class_name< (full-name)
+(defmacro filter (&rest rest)
+  `(remove-if-not ,@rest))
+
+(defun extract-class-name< (full-name)
   (if (listp full-name)
       (let ((len (length full-name)))
 	(nth (- len 1) full-name))
       full-name))
 
-(defun class_path< (full-name)
+(defun class-path< (full-name)
   (if (listp full-name)
       (format nil "~{~A~^/~}" (subseq full-name 0 (- (length full-name) 1)))
     ""))
 
-(defun class-name< (class-name)
-  (format nil (getf *configs* 'class) class-name))
+(defun class-header< (full-name)
+  (if (listp full-name)
+      (format nil "~{~A~^/~}.h" full-name)
+    (format nil "~A.h" full-name)))
 
-(defun method-name< (class-name method-name)
-  (format nil "__lcc_~A_~A__" class-name method-name))
+(defun class-lib< (full-name)
+  (if (listp full-name)
+      (format nil "~{~A~^-~}" full-name)
+    (format nil "~A" full-name)))
 
-(defun static-class-name< (class-name)
-  (format nil "__lcc_~A_static__" class-name))
+(defun class-path-lib< (full-name)
+  (if (listp full-name)
+      (values
+       (format nil "~{~A~^/~}" (subseq full-name 0 (- (length full-name) 1)))
+       (class-lib< full-name))
+    (values
+     (format nil "" full-name)
+     (class-lib< full-name))))
 
-(defun static-variable-name< (class-name)
-  (format nil "__lcc_~A_static_i__" class-name))
+(defun guard-name< (full-name)
+  (if (listp full-name)
+      (format nil "__~{~A~^_~}_H__" (mapcar #'string-upcase full-name))
+    (format nil "__~A_H__" (string-upcase full-name))))
 
-(defun static-method-name< (class-name method-name)
-  (format nil "__lcc_~A_~A_static__" class-name method-name))
+(defun class-name< (full-name)
+  (if (listp full-name)
+      (format nil "__~{~A~^_~}__" full-name)
+    (format nil "__~A__" full-name)))
+
+(defun method-name< (full-name method-name)
+  (if (listp full-name)
+      (format nil "__~{~A~^_~}_~A__" full-name method-name)
+    (format nil "__~A_~A__" full-name method-name)))
+
+(defun static-method-name< (full-name method-name)
+  (if (listp full-name)
+      (format nil "__~{~A~^_~}_~A__" full-name method-name)
+    (format nil "__~A_~A__" full-name method-name)))
+
+(defun static-class-name< (full-name)
+  (if (listp full-name)
+      (format nil "__~{~A~^_~}_static__" full-name)
+    (format nil "__~A_static__" full-name)))
+
+(defun static-class-variable-name< (full-name)
+  (if (listp full-name)
+      (format nil "__~{~A~^_~}_class__" full-name)
+    (format nil "__~A_class__" full-name)))
+
+(defun static-variable-name< (full-name)
+  (if (listp full-name)
+      (format nil "__~{~A~^_~}_static_i__" full-name)
+    (format nil "__~A_static_i__" full-name)))

@@ -1,7 +1,7 @@
 (in-package :lcc)
 
 (defun specify-class (class)
-  (let* ((name    (extract_class_name< (nth 1 class)))
+  (let* ((name    (extract-class-name< (nth 1 class)))
 	 (args    (nth 2 class))
 	 (clauses (nthcdr 3 class))
 	 (class-specifier (make-specifier name '|@CLASS| nil nil nil nil nil (nth 1 class) args)))
@@ -50,151 +50,186 @@
 
 (defun compile-class (spec globals)
   (let* ((name      (name spec))
-	 (decl-file (format nil "~A.h" (class-name< name)))
-	 (defs-file (format nil "~A.c" (class-name< name)))
-	 (meta-file (format nil "~A.m" (class-name< name)))
+	 (decl-file (format nil "~A.h" name))
+	 (defs-file (format nil "~A.c" name))
+	 (meta-file (format nil "~A.m" name))
 	 (args      (attrs spec))
 	 (locals    (copy-specifiers globals)))
     (setf (gethash (user-symbol "_LCC_CLASS_") locals)
 	  (make-specifier (user-symbol "_LCC_CLASS_") '|@VARIABLE| (user-symbol "const")
 			  (user-symbol "char") (user-symbol "*") (user-symbol "const") nil (symbol-name name) '(|static|)))
     (setf (gethash name locals) spec)
-    (format t "lcc: compiling class ~A~%" (name spec))
-    (ensure-directories-exist (class_path< (default spec)))
-    (let ((cwd (uiop:getcwd)))
-      (uiop:chdir (class_path< (default spec)))
-      (uiop:with-current-directory ((class_path< (default spec)))
-	;; decl
-	(case name
-	  ((|t|) (setq *output* t))
-	  (otherwise (setq *output*
-			   (open decl-file
-				 :direction :output
-				 :if-does-not-exist :create
-				 :if-exists :supersede))))
-	(unwind-protect
-	    (progn
-	      (output "#ifndef __LCC_~A_H__~%" name)
-	      (output "#define __LCC_~A_H__~%" name)
-	      (dotimes (i (length args))
-		(when (zerop (mod i 2))
-		  (when (key-eq (nth i args) ':|std|)
-		    (let ((custom (nth (+ i 1) args)))
-		      (when (key-eq custom '|true|)
-			(output "#include <stdio.h>~%")
-			(output "#include <stddef.h>~%")
-			(output "#include <stdint.h>~%")
-			(output "#include <stdlib.h>~%")
-			(output "#include <stdbool.h>~%"))))))
-	      (maphash #'(lambda (in-name in-spec)
-			   (case (construct in-spec)
-			     ('|@PREPROC| (compile-preprocessor in-spec 0 locals))
-			     ('|@INCLUDE| (compile-include      in-spec 0 locals))
-			     ('|@IMPORT|  (setf (gethash in-name locals)
-						(load-specifier
-						    (read-meta-file
-							(format nil "~A.m" (class-name< (extract_class_name< in-name)))))))
-			     (otherwise nil)))
-		       (inners spec))
-	      ;; static
-	      (output "~&static const char * const __lcc_~A_class__ = ~S;~%" name (symbol-name name))
-	      (output "~&struct ~A {~%" (static-class-name< name))
-	      (maphash #'(lambda (in-name in-spec)
-			   (case (construct in-spec)
-			     ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
-			     ('|@VARIABLE|
-			      (when (find '|static| (attrs in-spec))
-				(compile-variable     in-spec 1 locals spec)))
-			     (otherwise nil)))
-		       (inners spec))
-	      (output "~&} ~A;~%" (static-variable-name< name))
-	      (maphash #'(lambda (in-name in-spec)
-			   (case (construct in-spec)
-			     ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
-			     ('|@FUNCTION|
-			      (when (find '|static| (attrs in-spec))
-				(compile-function     in-spec 0 locals spec :no-body t)))
-			     (otherwise nil)))
-		       (inners spec))
-	      ;; instance
-	      (output "~&typedef struct ~A {~%" (class-name< name))
-	      (maphash #'(lambda (in-name in-spec)
-			   (case (construct in-spec)
-			     ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
-			     ('|@VARIABLE|
-			      (unless (find '|static| (attrs in-spec))
-				(compile-variable     in-spec 1 locals spec)))
-			     (otherwise nil)))
-		       (inners spec))
-	      (output "~&} ~A;~%" (class-name< name))
-	      (maphash #'(lambda (in-name in-spec)
-			   (case (construct in-spec)
-			     ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
-			     ('|@FUNCTION|
-			      (unless (find '|static| (attrs in-spec))
-				(compile-function     in-spec 0 locals spec :no-body t)))
-			     (otherwise nil)))
-		       (inners spec))
-	      (output "~&#endif /* __LCC_~A_H__ */~%" name)
-	      (output "~%")
-	      (close *output*))
+    (setf (gethash (default spec) locals) spec)
+    (format t "lcc: compiling class ~A~%" (default spec))
+    (let ((cwd (namestring (uiop:getcwd)))
+	  (path (class-path< (default spec))))
+      (ensure-directories-exist (format nil "~A~A/meta" cwd path))
+      (when (> (length path) 0) (uiop:chdir path))
+      ;; decl
+      (case name
+	((|t|) (setq *output* t))
+	(otherwise (setq *output*
+			 (open (format nil "~A~A/~A" cwd path decl-file)
+			       :direction :output
+			       :if-does-not-exist :create
+			       :if-exists :supersede))))
+      (unwind-protect
 	  (progn
-	    (if (key-eq defs-file '|t|)
-		(setq *output* t)
-	      (close *output*))))
-	;; defs
-	(case name
-	  ((|t|) (setq *output* t))
-	  (otherwise (setq *output*
-			   (open defs-file
-				 :direction :output
-				 :if-does-not-exist :create
-				 :if-exists :supersede))))
-	(output "#include ~S~%" decl-file)
-	(unwind-protect
-	    (progn
-	      (maphash #'(lambda (in-name in-spec)
-			   (case (construct in-spec)
-			     ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
-			     ('|@FUNCTION| (compile-function     in-spec 0 locals spec))
-			     (otherwise nil)))
-		       (inners spec))
-	      (output "~%")
-	      (close *output*))
+	    (output "#ifndef ~A~%" (guard-name< (default spec)))
+	    (output "#define ~A~%" (guard-name< (default spec)))
+	    (dotimes (i (length args))
+	      (when (zerop (mod i 2))
+		(when (key-eq (nth i args) ':|std|)
+		  (let ((custom (nth (+ i 1) args)))
+		    (when (key-eq custom '|true|)
+		      (output "#include <stdio.h>~%")
+		      (output "#include <stddef.h>~%")
+		      (output "#include <stdint.h>~%")
+		      (output "#include <stdlib.h>~%")
+		      (output "#include <stdbool.h>~%"))))))
+	    (maphash #'(lambda (in-name in-spec)
+			 (case (construct in-spec)
+			   ('|@PREPROC| (compile-preprocessor in-spec 0 locals))
+			   ('|@INCLUDE| (compile-include      in-spec 0 locals))
+			   ('|@IMPORT|  (setf (gethash in-name locals)
+					      (load-specifier
+						  (read-meta-file
+						      (format nil "~A~A/~A.m"
+							      cwd
+							      (class-path< in-name)
+							      (extract-class-name< in-name)))))
+			    (compile-import in-spec 0 locals))
+			   (otherwise nil)))
+		     (inners spec))
+	    ;; static
+	    (output "~&static const char * const ~A = \"~A\";~%"
+		    (static-class-variable-name< (default spec)) (default spec))
+	    (output "~&struct ~A {~%" (static-class-name< (default spec)))
+	    (maphash #'(lambda (in-name in-spec)
+			 (case (construct in-spec)
+			   ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
+			   ('|@VARIABLE|
+			    (when (find '|static| (attrs in-spec))
+			      (compile-variable     in-spec 1 locals spec)))
+			   (otherwise nil)))
+		     (inners spec))
+	    (output "~&} ~A;~%" (static-variable-name< (default spec)))
+	    (maphash #'(lambda (in-name in-spec)
+			 (case (construct in-spec)
+			   ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
+			   ('|@FUNCTION|
+			    (when (find '|static| (attrs in-spec))
+			      (compile-function     in-spec 0 locals spec :no-body t)))
+			   (otherwise nil)))
+		     (inners spec))
+	    ;; instance
+	    (output "~&typedef struct ~A {~%" (class-name< (default spec)))
+	    (maphash #'(lambda (in-name in-spec)
+			 (case (construct in-spec)
+			   ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
+			   ('|@VARIABLE|
+			    (unless (find '|static| (attrs in-spec))
+			      (compile-variable     in-spec 1 locals spec)))
+			   (otherwise nil)))
+		     (inners spec))
+	    (output "~&} ~A;~%" (class-name< (default spec)))
+	    (maphash #'(lambda (in-name in-spec)
+			 (case (construct in-spec)
+			   ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
+			   ('|@FUNCTION|
+			    (unless (find '|static| (attrs in-spec))
+			      (compile-function     in-spec 0 locals spec :no-body t)))
+			   (otherwise nil)))
+		     (inners spec))
+	    (output "~&#endif /* ~A */~%" (guard-name< (default spec)))
+	    (output "~%")
+	    (close *output*))
+	(progn
+	  (if (key-eq defs-file '|t|)
+	      (setq *output* t)
+	    (close *output*))))
+      ;; defs
+      (case name
+	((|t|) (setq *output* t))
+	(otherwise (setq *output*
+			 (open (format nil "~A~A/~A" cwd path defs-file)
+			       :direction :output
+			       :if-does-not-exist :create
+			       :if-exists :supersede))))
+      (output "#include ~S~%" decl-file)
+      (unwind-protect
 	  (progn
-	    (if (key-eq defs-file '|t|)
-		(setq *output* t)
-	      (close *output*))))
-	;; meta
-	(case name
-	  ((|t|) (setq *output* t))
-	  (otherwise (write-meta-file meta-file (dump-specifier spec))))
-	;; external compilation
-	(dotimes (i (length args))
-	  (when (zerop (mod i 2))
-	    (when (key-eq (nth i args) ':|compile|)
-	      (let* ((command   (getf *configs* 'compiler))
-		     (program   (car command))
-		     (arguments (cdr command))
-		     (custom    (nth (+ i 1) args)))
-		(unless (key-eq custom '|false|)
-		  (progn
-		    (when (key-eq custom '|true|)
-		      (setq custom '()))
-		    (setq custom (list "-c" defs-file
-				       "-o" (format nil "~A.o" (class-name< name))))
-		    (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))
-	    (when (key-eq (nth i args) ':|link|)
-	      (let* ((command   (getf *configs* 'linker))
-		     (program   (car command))
-		     (arguments (cdr command))
-		     (custom    (nth (+ i 1) args)))
-		(unless (key-eq custom '|false|)
-		  (progn
-		    (when (key-eq custom '|true|)
-		      (setq custom '()))
-		    (setq custom (list "-o" (format nil (getf *configs* 'library) (class-name< name))
-				       (format nil (getf *configs* 'object) (class-name< name))))
-		    (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))))
-	(setq *output* t))
-      (uiop:chdir cwd))))
+	    (maphash #'(lambda (in-name in-spec)
+			 (case (construct in-spec)
+			   ('|@PREPROC|  (compile-preprocessor in-spec 0 locals))
+			   ('|@FUNCTION| (compile-function     in-spec 0 locals spec))
+			   (otherwise nil)))
+		     (inners spec))
+	    (output "~%")
+	    (close *output*))
+	(progn
+	  (if (key-eq defs-file '|t|)
+	      (setq *output* t)
+	    (close *output*))))
+      ;; meta
+      (case name
+	((|t|) (setq *output* t))
+	(otherwise (write-meta-file
+		       (format nil "~A~A/~A" cwd path meta-file)
+		     (dump-specifier spec))))
+      ;; external compilation
+      (dotimes (i (length args))
+	(when (zerop (mod i 2))
+	  (when (key-eq (nth i args) ':|compile|)
+	    (let* ((command   (getf *configs* 'compiler))
+		   (program   (car command))
+		   (arguments (cdr command))
+		   (custom    (nth (+ i 1) args)))
+	      (unless (key-eq custom '|false|)
+		(progn
+		  (when (key-eq custom '|true|)
+		    (setq custom '()))
+		  (setq custom (list "-c" defs-file (format nil "-I~A" cwd)
+				     "-o" (format nil "~A.o" name)))
+		  (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))
+	  (when (key-eq (nth i args) ':|link|)
+	    (let* ((command   (getf *configs* 'linker))
+		   (program   (car command))
+		   (arguments (cdr command))
+		   (custom    (nth (+ i 1) args)))
+	      (unless (key-eq custom '|false|)
+		(progn
+		  (when (key-eq custom '|true|)
+		    (setq custom '()))
+		  (let ((main (gethash (user-symbol "main") (inners spec))))
+		    (if (and main (find '|static| (attrs main)))
+			(setq custom (list "-o" (class-lib< (default spec)) (format nil (getf *configs* 'object) name)))
+		      (setq custom (list "-o" (format nil (getf *configs* 'library) (class-lib< (default spec)))
+					 (format nil (getf *configs* 'object) name)))))
+		  (maphash #'(lambda (-l -p)
+			       (setq arguments (append arguments (list (format nil "-L~A~A"cwd -p))))
+			       (setq custom (append custom (list (format nil "-l~A" -l)))))
+			   (all-dependencies cwd spec))
+		  (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))))
+      (setq *output* t)
+      (when (> (length path) 0) (uiop:chdir cwd)))))
+
+(defun all-dependencies (cwd spec)
+  (let ((all-deps (make-hash-table :test 'equal)))
+    (labels ((aad (this-spec)
+	       (maphash #'(lambda (in-name in-spec)
+			    (when (eql (construct in-spec) '|@IMPORT|)
+			      (let ((deps-spec (load-specifier
+						   (read-meta-file
+						       (format nil "~A~A/~A.m"
+							       cwd
+							       (class-path< in-name)
+							       (extract-class-name< in-name))))))
+				(multiple-value-bind (-p -l)
+				  (class-path-lib< (default deps-spec))
+				  (setf (gethash -l all-deps) -p))
+				(aad deps-spec))))
+			(inners this-spec))))
+      (aad spec))
+    all-deps))
+

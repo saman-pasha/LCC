@@ -86,6 +86,13 @@
 	((numberp obj) (format nil "~A" obj))
 	((characterp obj) (if (eql obj #\Null) (format nil "'\\0'" obj) (format nil "'~C'" obj)))
 	((stringp obj) (format nil "\"~A\"" obj))
+	((listp obj)
+	 (if (every #'symbolp obj)
+	     (progn
+	       (unless (gethash obj globals nil)
+		 (error (format nil "undefined class ~A~%" obj)))
+	       (format nil "~A *" (class-name< obj)))
+	   (error (format nil "syntax error \"~A\"" obj))))
 	((and (symbolp obj) (is-symbol obj))
 	 (if (eql (char (symbol-name obj) 0) #\0)
 	     (format nil "~A" obj)
@@ -93,7 +100,7 @@
 	     (if spec
 		 (progn
 		   (if (eql (construct spec) '|@CLASS|)
-		       (format nil "~A *" (class-name< obj))
+		       (format nil "~A *" (class-name< (default spec)))
 		     (format nil "~A" obj)))
 	       (progn
 		 (format t "lcc: [warning] undefined variable ~A~%" obj)
@@ -160,7 +167,7 @@
   (when (< (length form) 2) (error (format nil "wrong new form ~A" form)))
   (let ((cls   (gethash (nth 1 form) globals nil))
 	(ctors '()))
-    (when (null cls) (error (format nil "undefined class ~A in form ~A" cls form)))
+    (when (null cls) (error (format nil "undefined class ~A in form ~A" (nth 1 form) form)))
     (maphash #'(lambda (name spec)
 		 (when (and (eql (construct spec) '|@FUNCTION|) (eql (default spec) :ctor))
 		   (push spec ctors)))
@@ -171,9 +178,41 @@
 	  (dolist (arg (cddr form))
 	    (push (compile-form< arg globals) args))
 	(return-from compile-new-form< (format nil "~A(~{~A~^, ~})"
-					       (method-name< (name cls) (name ctor))
+					       (method-name< (default cls) (name ctor))
 					       (reverse args))))))
     (error (format nil "not found matched costructor for class ~A in form ~A" (name cls) form))))
+
+(defun compile-call-form< (form globals)
+  (when (< (length form) 2) (error (format nil "wrong call form ~A" form)))
+  (let* ((var (nth 1 form))
+	 (method (car form))
+	 (var-spec (gethash var globals nil)))
+    (if (listp var)
+	(progn
+	  (format nil "~A(~{~A~^, ~})" method (mapcar #'(lambda (f) (compile-form< f globals)) (cdr form))))
+      (progn
+	(if (or (not (is-symbol var)) (null var-spec))
+	    (progn
+	      (format t "lcc: [warning] undefined function ~A~%" method)
+	      (format nil "~A(~{~A~^, ~})" method (mapcar #'(lambda (f) (compile-form< f globals)) (cdr form))))
+	  (if (eql (construct var-spec) '|@CLASS|)
+	      (let ((fun-spec (gethash method (inners var-spec) nil)))
+		(when (or (null fun-spec) (not (eql (construct fun-spec) '|@FUNCTION|)) (find '|static| (attrs fun-spec)))
+		  (error (format nil "class ~A does not have static method ~A in ~A" (default var-spec) method form)))
+		(format nil "~A(" (static-method-name< (default var-spec) (name fun-spec))))
+	    (let ((type-spec (gethash (typeof var-spec) globals nil)))
+	      (if (null type-spec)
+		  (progn
+		    (format t "lcc: [warning] undefined type ~A~%" (typeof var-spec) form)
+		    (format nil "~A(~{~A~^, ~})" method (mapcar #'(lambda (f) (compile-form< f globals)) (cdr form))))
+		(let ((fun-spec (gethash method (inners type-spec) nil)))
+		  (when (or (null fun-spec) (not (eql (construct fun-spec) '|@FUNCTION|)))
+		    (error (format nil "class ~A does not have method ~A in ~A" (default var-spec) method form)))
+		  (format nil "~A(~A~:[, ~;~]~{~A~^, ~})"
+			  (method-name< (default type-spec) (name fun-spec))
+			  (name var-spec) (null (cddr form))
+			  (mapcar #'(lambda (f) (compile-form< f globals)) (cddr form)))
+		  )))))))))
 
 (defun compile-form< (form globals)
   (handler-case
@@ -191,11 +230,7 @@
 		((key-eq func '|?|)      (compile-?-form<    form globals)) 
 		((key-eq func '|cast|)   (compile-cast-form< form globals))
 		((key-eq func '|new|)    (compile-new-form<  form globals))
-		(t (if (gethash func globals nil)
-		       (format nil "~A(~{~A~^, ~})" func (mapcar #'(lambda (f) (compile-form< f globals)) (cdr form)))
-		     (progn
-		       (format t "lcc: [warning] undefined function ~A~%" func)
-		       (format nil "~A(~{~A~^, ~})" func (mapcar #'(lambda (f) (compile-form< f globals)) (cdr form)))))))))
+		(t                       (compile-call-form< form globals))))) 
     (error (ex)
 	   (error (format nil "~&~A -> ~A~%" ex form)))))
 
@@ -307,8 +342,12 @@
 		   (setf (gethash variable locals)
 			 (make-specifier variable '|@VARIABLE| const typeof modifier const-ptr array value attributes)))
 		 (output "~&~A~:[~;static ~]~:[~;register ~]~:[~;auto ~]~A;" (indent (+ lvl 1))
-		      is-static is-register is-auto
-		      (format-type-value< const typeof modifier const-ptr variable array value locals)))
+			 is-static is-register is-auto
+			 (format-type-value< const
+			   (if (listp typeof)
+			       (format nil "~A *" (class-name< typeof))
+			       typeof)
+			   modifier const-ptr variable array value locals)))
 	       (setq is-static nil))))
     (dolist (variable (reverse dynamics))
       (output "~&~Aif (~A == NULL) printf(\"dynamic memory allocation failed! ~A\\n\");~%" (indent (+ lvl 1))
@@ -341,10 +380,9 @@
 		     ((key-eq func '|do|)       (compile-do-form       form lvl locals)) 
 		     ((key-eq func '|for|)      (compile-for-form      form lvl locals)) 
 		     ((key-eq func '|for-each|) (compile-for-each-form form lvl locals)) 
-		     (t (concatenate 'string
-				     (output "~&~A~A" (indent lvl) func)
-				     (output "(~{~A~^, ~});"
-					     (mapcar #'(lambda (f) (compile-form< f locals)) (cdr form)))))))))))
+		     (t                         (output "~&~A~A;~%" (indent lvl)
+							(compile-form< form locals)))
+		     ))))))
 
 (defun compile-variable (spec lvl globals &optional memberof)
   (let ((is-auto     nil)
@@ -366,7 +404,7 @@
 	 (is-declare nil)
 	 (is-inline  nil)
 	 (is-extern  nil)
-	 (name       (if (not (null methodof)) (method-name< (name methodof) (name spec)) (name spec)))
+	 (name       (if (not (null methodof)) (method-name< (default methodof) (name spec)) (name spec)))
 	 (is-static-method nil)
 	 (params     (params spec))
 	 (body       (body   spec))
@@ -383,10 +421,10 @@
 	('|extern|  (setq is-extern  t))))
     (unless (null methodof)
       (setf (gethash (user-symbol "this") locals)
-	    (make-specifier (user-symbol "this") '|@VARIABLE| nil (name methodof)
+	    (make-specifier (user-symbol "this") '|@VARIABLE| nil (default methodof)
 			    (user-symbol "*") (user-symbol "const") nil nil nil))
       (setf (gethash (user-symbol "class") locals)
-	    (make-specifier (user-symbol "class") '|@VARIABLE| nil (name methodof)
+	    (make-specifier (user-symbol "class") '|@VARIABLE| nil (default methodof)
 			    (user-symbol "*") (user-symbol "const") nil nil nil)))
     (setf (gethash (user-symbol "_LCC_FUNCTION_") locals)
 	  (make-specifier (user-symbol "_LCC_FUNCTION_") '|@VARIABLE| (user-symbol "const")
@@ -397,14 +435,15 @@
 		   (otherwise nil)))
 	     (params spec))
     (output "~&~A~:[~;extern ~]~:[~;inline ~]~:[~;static ~]~A ~A ("
-      (indent lvl) is-extern is-inline is-static ret name)
+	    (indent lvl) is-extern is-inline is-static ret
+	    (if (and is-static-method (eql (name spec) (user-symbol "main"))) '|main| name))
     (let ((cparams '()))
       (maphash #'(lambda (name param)
 		   (push (compile-spec-type-value< param locals) cparams))
 	       params)
       (unless (or (null methodof) (eql (default spec) :ctor))
 	(unless is-static-method
-	  (output "~A * const this~:[~;, ~]" (class-name< (name methodof)) (> (length cparams) 0))))
+	  (output "~A * const this~:[~;, ~]" (class-name< (default methodof)) (> (length cparams) 0))))
       (output "~{~A~^, ~})~:[ {~;;~]~%" (nreverse cparams) (or is-declare no-body)))
     (if (and is-declare (null methodof))
 	(progn
@@ -417,17 +456,17 @@
 	    (output " (~{~A~^, ~});~%" (nreverse cparams))))
       (unless no-body
 	(unless (null methodof)
+	  (output "~&~Astruct ~A * const class = &~A;" (indent (+ 1 lvl))
+		  (static-class-name< (default methodof)) (static-variable-name< (default methodof)))
 	  (when (eql (default spec) :ctor)
-	    (let ((cls (class-name< (name methodof))))
+	    (let ((cls (class-name< (default methodof))))
 	      (output "~&~A~A * const this = (~A *)(malloc(sizeof(~A)));" (indent (+ 1 lvl)) cls cls cls)
 	      (output "~&~Aif (this == NULL) {~%" (indent (+ 1 lvl)))
-	      (output "~&~Aprintf(\"dynamic memory allocation failed! ~A::~A\\n\");~%" (indent (+ 2 lvl)) cls name)
+	      (output "~&~Aprintf(\"dynamic memory allocation failed! ~A\\n\");~%" (indent (+ 2 lvl)) name)
 	      (output "~&~Areturn NULL;~%" (indent (+ 2 lvl)))
 	      (output "~&~A}~%" (indent (+ 1 lvl)))))
-	  (output "~&~Astruct ~A * const class = &~A;" (indent (+ 1 lvl))
-		  (static-class-name< (name methodof)) (static-variable-name< (name methodof)))
-	  (output "~&~Astatic const char * const _LCC_CLASS_ = __lcc_~A_class__;~%"
-		  (indent (+ 1 lvl)) (symbol-name (name methodof)) (name methodof)))  
+	  (output "~&~Astatic const char * const _LCC_CLASS_ = ~A;~%"
+		  (indent (+ 1 lvl)) (static-class-variable-name< (default methodof))))  
 	(output "~&~Astatic const char * const _LCC_FUNCTION_ = ~S;~%" (indent (+ 1 lvl)) (symbol-name (name spec)))
 	(compile-body body (+ lvl 1) locals)
 	(unless (null methodof)
@@ -446,6 +485,14 @@
     (cond ((symbolp header) (output "~&#include ~A~%" header))
 	  ((stringp header) (output "~&#include ~S~%" header))
 	  (t (error "wrong inclusion")))))
+
+(defun compile-import (spec lvl globals)
+  (let ((class (name spec)))
+    (if (and (listp class) (every #'symbolp class))
+	(output "~&#include ~S" (class-header< class))
+      (if (symbolp class)
+	  (output "~&#include ~S" (class-header< class))
+	(error "wrong import")))))
 
 (defun compile-typedef (spec lvl globals)
   (let ((text (compile-spec-type< spec globals)))
