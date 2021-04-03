@@ -106,6 +106,17 @@
 		 (format nil "~A" obj))))))
 	(t (error (format nil "syntax error \"~A\"" obj)))))
 
+(defun compile-type-name< (typeof globals)
+  (let ((type-spec (gethash typeof globals nil)))
+    (if type-spec
+	(if (or (eql (construct type-spec) '|@CLASS|)
+	      (eql (construct type-spec) '|@IMPORT|))
+	    (format nil "~A *" (class-name< (default type-spec)))
+	  (error (format t "it is not a type ~A~%" typeof)))
+      (progn
+	(format t "lcc: [warning] undefined type ~A~%" typeof)
+	(format nil "~A" typeof)))))
+  
 (defun compile-unary< (form globals)
   (unless (= (length form) 2) (error (format nil "wrong unary form ~A" form)))
   (let* ((oprt (car form))
@@ -342,17 +353,8 @@
 			 (make-specifier variable '|@VARIABLE| const typeof modifier const-ptr array value attributes)))
 		 (output "~&~A~:[~;static ~]~:[~;register ~]~:[~;auto ~]~A;" (indent (+ lvl 1))
 			 is-static is-register is-auto
-			 (format-type-value< const
-			   (let ((type-spec (gethash typeof globals nil)))
-			     (if type-spec
-				 (if (or (eql (construct type-spec) '|@CLASS|)
-				       (eql (construct type-spec) '|@IMPORT|))
-				     (format nil "~A *" (class-name< (default type-spec)))
-				   (format nil "~A" typeof))
-			       (progn
-				 (format t "lcc: [warning] undefined variable ~A~%" typeof)
-				 (format nil "~A" typeof))))
-			   modifier const-ptr variable array value locals)))
+			 (format-type-value< const (compile-type-name< typeof globals)
+					     modifier const-ptr variable array value locals)))
 	       (setq is-static nil))))
     (dolist (variable (reverse dynamics))
       (output "~&~Aif (~A == NULL) printf(\"dynamic memory allocation failed! ~A\\n\");~%" (indent (+ lvl 1))
