@@ -96,8 +96,8 @@
 						  (read-meta-file
 						      (format nil "~A~A/~A.m"
 							      cwd
-							      (class-path< in-name)
-							      (extract-class-name< in-name)))))
+							      (class-path< (default in-spec))
+							      (extract-class-name< (default in-spec))))))
 			    (compile-import in-spec 0 locals))
 			   (otherwise nil)))
 		     (inners spec))
@@ -223,8 +223,8 @@
 						   (read-meta-file
 						       (format nil "~A~A/~A.m"
 							       cwd
-							       (class-path< in-name)
-							       (extract-class-name< in-name))))))
+							       (class-path< (default in-spec))
+							       (extract-class-name< (default in-spec)))))))
 				(multiple-value-bind (-p -l)
 				  (class-path-lib< (default deps-spec))
 				  (setf (gethash -l all-deps) -p))

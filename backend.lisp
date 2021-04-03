@@ -98,10 +98,9 @@
 	     (format nil "~A" obj)
 	   (let ((spec (gethash obj globals nil)))
 	     (if spec
-		 (progn
-		   (if (eql (construct spec) '|@CLASS|)
-		       (format nil "~A *" (class-name< (default spec)))
-		     (format nil "~A" obj)))
+		 (if (or (eql (construct spec) '|@CLASS|) (eql (construct spec) '|@IMPORT|))
+		     (format nil "~A *" (class-name< (default spec)))
+		   (format nil "~A" obj))
 	       (progn
 		 (format t "lcc: [warning] undefined variable ~A~%" obj)
 		 (format nil "~A" obj))))))
@@ -344,9 +343,15 @@
 		 (output "~&~A~:[~;static ~]~:[~;register ~]~:[~;auto ~]~A;" (indent (+ lvl 1))
 			 is-static is-register is-auto
 			 (format-type-value< const
-			   (if (listp typeof)
-			       (format nil "~A *" (class-name< typeof))
-			       typeof)
+			   (let ((type-spec (gethash typeof globals nil)))
+			     (if type-spec
+				 (if (or (eql (construct type-spec) '|@CLASS|)
+				       (eql (construct type-spec) '|@IMPORT|))
+				     (format nil "~A *" (class-name< (default type-spec)))
+				   (format nil "~A" typeof))
+			       (progn
+				 (format t "lcc: [warning] undefined variable ~A~%" typeof)
+				 (format nil "~A" typeof))))
 			   modifier const-ptr variable array value locals)))
 	       (setq is-static nil))))
     (dolist (variable (reverse dynamics))
@@ -487,7 +492,7 @@
 	  (t (error "wrong inclusion")))))
 
 (defun compile-import (spec lvl globals)
-  (let ((class (name spec)))
+  (let ((class (default spec)))
     (if (and (listp class) (every #'symbolp class))
 	(output "~&#include ~S" (class-header< class))
       (if (symbolp class)
