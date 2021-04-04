@@ -2,13 +2,11 @@
 
 (defvar *output* t)
 
-(defvar *unaries* '(|+| |-| |++| |++#| |--| |--#| |~| |!| |not| |*| |contentof| |&| |addressof|))
+(defvar *unaries* '(|+| |-| |++| |++#| |--| |--#| |~| |not| |contentof| |addressof|))
 (defvar *operators* '(|+| |-| |*| |/| |%| |==| |!=| |>| |<| |>=| |<=| |^| |xor| |<<| |>>|
-		      |&&| |and| |or| |&| |bitand| |bitor| |->| |$|))
-(defvar *assignments* '(|=| |+=| |-=| |*=| |/=| |%=| |<<=| |>>=|))
+		      |and| |or| |bitand| |bitor| |->| |$|))
+(defvar *assignments* '(|+=| |-=| |*=| |/=| |%=| |<<=| |>>=|))
 (defvar *modifiers* '(|*| |**|))
-
-(defparameter *default-readtable* (copy-readtable))
 
 (defun reving (list result)
   (cond ((consp list) (reving (cdr list) (cons (car list) result)))

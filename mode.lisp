@@ -55,6 +55,7 @@
    (1 . override)
    (1 . import)
    (1 . call)
+   (1 . type)
    ))
 
 (defun lcc-add-attributes (face-name keyword-rules)

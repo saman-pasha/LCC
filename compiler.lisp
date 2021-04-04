@@ -3,28 +3,29 @@
 ;; IR Intermediate Representation
 (defun create-globals (ir &optional (globals (make-hash-table :test 'equal)))
   (maphash #'(lambda (name spec)
-	       (case (construct spec)
-		 ('|@VARIABLE| (setf (gethash name globals) spec))
-		 ('|@FUNCTION|
-		  (unless (or (eql (default spec) :ctor) (eql (default spec) :dtor))
-		    (setf (gethash name globals) spec)))
-		 ('|@TYPEDEF|  (setf (gethash name globals) spec))
-		 ('|@ENUM|
-		  (unless (anonymous spec) (setf (gethash name globals) spec))
-		  (maphash #'(lambda (k v) (setf (gethash k globals) v)) (inners spec)))
-		 ('|@STRUCT|
-		  (setf (gethash name globals) spec)
-		  (maphash #'(lambda (k v)
-			       (when (eql (construct v) '|@DECLARES|) (setf (gethash k globals) v)))
-			   (inners spec)))
-		 ('|@UNION|
-		  (setf (gethash name globals) spec)
-		  (maphash #'(lambda (k v)
-			       (when (eql (construct v) '|@DECLARES|) (setf (gethash k globals) v)))
-			   (inners spec)))
-		 ('|@GUARD| (create-globals spec globals))
-		 (otherwise nil)))
-	   (inners ir))
+	       (if (listp spec)
+		   (dolist (method spec)
+		     (setf (gethash (name method) globals) spec))
+		 (case (construct spec)
+		   ('|@VARIABLE| (setf (gethash name globals) spec))
+		   ('|@FUNCTION| (setf (gethash name globals) spec))
+		   ('|@TYPEDEF|  (setf (gethash name globals) spec))
+		   ('|@ENUM|
+		    (unless (anonymous spec) (setf (gethash name globals) spec))
+		    (maphash #'(lambda (k v) (setf (gethash k globals) v)) (slot-value spec 'inners)))
+		   ('|@STRUCT|
+		    (setf (gethash name globals) spec)
+		    (maphash #'(lambda (k v)
+				 (when (eql (construct v) '|@DECLARES|) (setf (gethash k globals) v)))
+			     (slot-value spec 'inners)))
+		   ('|@UNION|
+		    (setf (gethash name globals) spec)
+		    (maphash #'(lambda (k v)
+				 (when (eql (construct v) '|@DECLARES|) (setf (gethash k globals) v)))
+			     (slot-value spec 'inners)))
+		   ('|@GUARD| (create-globals spec globals))
+		   (otherwise nil))))
+	   (slot-value ir 'inners))
   globals)
 
 ;; AST Abstract Syntax Tree
