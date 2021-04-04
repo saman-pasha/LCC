@@ -65,10 +65,12 @@
       (if (not (gethash alias (slot-value spec 'inners) nil))
 	  (push method-spec (gethash alias (slot-value spec 'inners)))
 	(error (format nil "only one static main allowed ~A" alias)))
-    (progn
-      (setf (name method-spec)
-	    (user-symbol (format nil "~A_~A" alias (length (gethash alias (slot-value spec 'inners))))))
-      (push method-spec (gethash alias (slot-value spec 'inners))))))
+    (if (key-eq alias '|__dtor__|)
+	(push method-spec (gethash alias (slot-value spec 'inners)))
+      (progn
+	(setf (name method-spec)
+	      (user-symbol (format nil "~A_~A" alias (length (gethash alias (slot-value spec 'inners))))))
+	(push method-spec (gethash alias (slot-value spec 'inners)))))))
 
 (defun dump-specifier (spec)
   (list
