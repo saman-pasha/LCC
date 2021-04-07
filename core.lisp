@@ -36,7 +36,7 @@
 			       while pos)))
 
 (defun display (&rest args)
-  (format t "~{~A~^ ~}" args))
+  (format t "~&~{~A~^ ~}~%" args))
 
 (defmacro output (ctrl &rest rest)
   `(format *output* ,ctrl ,@rest))
@@ -94,6 +94,36 @@
     (write-char #\' file)
     (write meta-data :stream file :pretty t)))
 
+(defun import-spec (spec globals)
+  (maphash #'(lambda (k v)
+	       (case (construct v)
+		 ('|@VARIABLE| (setf (gethash k globals) v))
+		 ('|@FUNCTION| (setf (gethash k globals) v))
+		 ('|@ENUM|     (setf (gethash k globals) v)
+		  (maphash #'(lambda (n m) (setf (gethash n globals) m)) v))
+		 ('|@STRUCT|   (setf (gethash k globals) v)
+		  (maphash #'(lambda (n m)
+			       (when (eql (construct m) '|@DECLARE|)
+				 (setf (gethash n globals) m)))
+			   v))
+		 ('|@UNION|    (setf (gethash k globals) v)
+		  (maphash #'(lambda (n m)
+			       (when (eql (construct m) '|@DECLARE|)
+				 (setf (gethash n globals) m)))
+			   v))
+		 ('|@GUARD|  (import-spec v globals))
+		 (otherwise t)))
+	   (slot-value spec 'inners)))
+
+(defun import-meta-file (path globals)
+  (let ((spec (load-specifier (read-meta-file path))))
+    (case (construct spec)
+      ('|@TARGET| (import-spec spec globals))
+      ('|@CLASS|  t)
+      (otherwise (error (format nil "invalid meta file root speficier ~A in file "
+				(construct spec) path))))
+    spec))
+
 (defun indent (lvl)
   (make-string (* lvl 2) :initial-element #\Space))
 
@@ -134,21 +164,35 @@
 (defmacro filter (&rest rest)
   `(remove-if-not ,@rest))
 
+(defun extract-include-name< (full-name)
+  (if (listp full-name)
+      (car (last full-name))
+    full-name))
+
+(defun include-header< (full-name)
+  (if (listp full-name)
+      (format nil "\"~{~A~^/~}\"" full-name)
+    (format nil "~A" full-name)))
+
+(defun include-path< (full-name)
+  (if (listp full-name)
+      (format nil "~{~A~^/~}" (butlast full-name))
+    ""))
+
 (defun extract-class-name< (full-name)
   (if (listp full-name)
-      (let ((len (length full-name)))
-	(nth (- len 1) full-name))
-      full-name))
-
-(defun class-path< (full-name)
-  (if (listp full-name)
-      (format nil "~{~A~^/~}" (subseq full-name 0 (- (length full-name) 1)))
-    ""))
+      (car (last full-name))
+    full-name))
 
 (defun class-header< (full-name)
   (if (listp full-name)
       (format nil "~{~A~^/~}.h" full-name)
     (format nil "~A.h" full-name)))
+
+(defun class-path< (full-name)
+  (if (listp full-name)
+      (format nil "~{~A~^/~}" (butlast full-name))
+    ""))
 
 (defun class-lib< (full-name)
   (if (listp full-name)
@@ -198,3 +242,22 @@
   (if (listp full-name)
       (format nil "__~{~A~^_~}_static_i__" full-name)
     (format nil "__~A_static_i__" full-name)))
+
+(defun unsigned-int-p (sym)
+  (when (symbolp sym)
+    (let ((str (coerce (symbol-name sym) 'list)))
+      (and (every #'digit-char-p (butlast str))
+	(eq (car (last str)) #\U)))))
+
+(defun long-p (sym)
+  (when (symbolp sym)
+    (let ((str (coerce (symbol-name sym) 'list)))
+      (and (every #'digit-char-p (butlast str))
+	(eq (car (last str)) #\L)))))
+
+(defun unsigned-long-p (sym)
+  (when (symbolp sym)
+    (let ((str (coerce (symbol-name sym) 'list)))
+      (and (every #'digit-char-p (butlast (butlast str)))
+	(eq (car (subseq (reverse str) 1 2)) #\U)
+	(eq (car (last str)) #\L)))))

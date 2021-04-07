@@ -3,9 +3,8 @@
 ;; IR Intermediate Representation
 (defun create-globals (ir &optional (globals (make-hash-table :test 'equal)))
   (maphash #'(lambda (name spec)
-	       (if (listp spec)
-		   (dolist (method spec)
-		     (setf (gethash (name method) globals) spec))
+	       (if (listp spec) nil
+		   ;;(dolist (method spec) (setf (gethash (name method) globals) spec))
 		 (case (construct spec)
 		   ('|@VARIABLE| (setf (gethash name globals) spec))
 		   ('|@FUNCTION| (setf (gethash name globals) spec))

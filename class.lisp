@@ -90,17 +90,24 @@
 			 (unless (listp in-spec)
 			   (case (construct in-spec)
 			     ('|@PREPROC| (compile-preprocessor in-spec 0 locals))
-			     ('|@INCLUDE| (compile-include      in-spec 0 locals))
+			     ('|@INCLUDE| (let ((file-name (format nil "~A~A/~A.m"
+								   cwd
+								   (include-path< (name in-spec))
+								   (extract-include-name< (name in-spec)))))
+					    (when (probe-file file-name)
+					      (import-meta-file file-name locals)))
+			      (compile-include in-spec 0 locals))
 			     ('|@IMPORT|  (setf (gethash in-name locals)
-						(load-specifier
-						    (read-meta-file
-							(format nil "~A~A/~A.m"
-								cwd
-								(class-path< (default in-spec))
-								(extract-class-name< (default in-spec))))))
+						(import-meta-file
+						    (format nil "~A~A/~A.m"
+							    cwd
+							    (class-path< (default in-spec))
+							    (extract-class-name< (default in-spec)))
+						  locals))
 			      (compile-import in-spec 0 locals))
 			     (otherwise nil))))
 		     (slot-value spec 'inners))
+	    (import-recursive cwd spec locals)
 	    ;; static
 	    (output "~&static const char * const ~A = \"~A\";~%"
 		    (static-class-variable-name< (default spec)) (default spec))
@@ -195,7 +202,7 @@
 		(progn
 		  (when (key-eq custom '|true|)
 		    (setq custom '()))
-		  (setq custom (list "-c" defs-file (format nil "-I~A" cwd)
+		  (setq custom (list (format nil "-I~A" cwd) "-c" defs-file
 				     "-o" (format nil "~A.o" name)))
 		  (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))
 	  (when (key-eq (nth i args) ':|link|)
@@ -226,6 +233,40 @@
 		  (uiop:run-program `(,program ,@arguments ,@custom) :input nil :output t :error-output t)))))))
       (setq *output* t)
       (when (> (length path) 0) (uiop:chdir cwd)))))
+
+(defun import-recursive (cwd spec globals)
+  (let ((all-deps (make-hash-table :test 'equal)))
+    (labels ((aad (this-spec)
+	       (maphash #'(lambda (in-name in-spec)
+			    (when (and (not (listp in-spec)) (eql (construct in-spec) '|@IMPORT|))
+			      (let ((deps-spec (load-specifier
+						   (read-meta-file
+						       (format nil "~A~A/~A.m"
+							       cwd
+							       (class-path< (default in-spec))
+							       (extract-class-name< (default in-spec)))))))
+				(maphash #'(lambda (in-name in-spec)
+					     (unless (listp in-spec)
+					       (case (construct in-spec)
+						 ('|@INCLUDE| (let ((file-name (format nil "~A~A/~A.m"
+										       cwd
+										       (include-path< (name in-spec))
+										       (extract-include-name< (name in-spec)))))
+								(when (probe-file file-name)
+								  (import-meta-file file-name globals))))
+						 ('|@IMPORT|  (setf (gethash in-name globals)
+								    (import-meta-file
+									(format nil "~A~A/~A.m"
+										cwd
+										(class-path< (default in-spec))
+										(extract-class-name< (default in-spec)))
+								      globals)))
+						 (otherwise nil))))
+					 (slot-value deps-spec 'inners))
+				(aad deps-spec))))
+		        (slot-value this-spec 'inners))))
+      (aad spec))
+    all-deps))
 
 (defun all-dependencies (cwd spec)
   (let ((all-deps (make-hash-table :test 'equal)))

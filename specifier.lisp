@@ -11,7 +11,7 @@
    (default   :initarg :default :accessor default)
    (attrs     :initarg :attrs :accessor attrs)
    (anonymous :initarg :anonymous :initform nil :accessor anonymous)
-   (body      :initform nil :accessor body)
+   (body      :initform nil)
    (params    :initform nil)
    (inners    :initform nil)))
 
@@ -51,14 +51,7 @@
   (setf (gethash alias (slot-value spec 'inners)) inner-spec))
 
 (defmethod spec-inner ((spec specifier) (alias list) (inner-spec specifier))
-  (if (every #'symbolp alias)
-      (setf (gethash alias (slot-value spec 'inners)) inner-spec)
-    (error (format nil "wrong specifier alias ~A" alias))))
-
-(defmethod spec-inner ((spec specifier) (alias string) (inner-spec specifier))
-  (if (eql (construct inner-spec) '|@INCLUDE|)
-      (setf (gethash alias (slot-value spec 'inners)) inner-spec)
-    (error (format nil "wrong specifier alias ~A" alias))))
+  (setf (gethash alias (slot-value spec 'inners)) inner-spec))
 
 (defmethod spec-method ((spec specifier) (alias symbol) (method-spec specifier))
   (if (and (key-eq alias '|main|) (find '|static| (attrs method-spec)))
@@ -134,6 +127,11 @@
       (setf (slot-value spec 'params) params)
       (setf (slot-value spec 'inners) inners)
       spec)))
+
+(defun copy-specifier (spec)
+  (make-specifier (name spec) (construct spec) (const spec) (typeof spec)
+		  (modifier spec) (const-ptr spec) (array-def spec) (default spec)
+		  (attrs spec) (anonymous spec)))
 
 (defun copy-specifiers (table)
   (let ((new-table (make-hash-table
@@ -363,22 +361,25 @@
 	  (multiple-value-bind (const type modifier const-ptr variable array)
 	    (specify-type< wl ir)
 	    (values const type modifier const-ptr variable array l)))))))
-
+	  
 (defun specify-preprocessor (def attrs lvl ir)
   (when (> (length attrs) 0) (error (format nil "wrong preprocessor attributes ~A" attrs)))
   (when (> (length def) 2) (error (format nil "wrong preprocessor definition ~A" def)))
   (let* ((name (gensym "lcc#PREPROC"))
 	 (preproc-specifier (make-specifier name '|@PREPROC| nil nil nil nil nil nil nil)))
     (spec-inner ir name preproc-specifier)
-    (setf (body preproc-specifier) def)))
+    (setf (slot-value preproc-specifier 'body) def)))
 
 (defun specify-include (def attrs lvl ir)
   (when (> (length attrs) 0) (error (format nil "wrong include attributes ~A" attrs)))
-  (let ((heads (cdr def)))
-    (dolist (head heads)
-      (if (or (symbolp head) (stringp head))
-	  (spec-inner ir head (make-specifier head '|@INCLUDE| nil nil nil nil nil nil nil))
-	(error "wrong inclusion")))))
+  (let ((heads (nth 1 def)))
+    (if (listp heads)
+	(if (and (stringp (car (last heads))) (every #'symbolp (butlast heads)))
+	    (spec-inner ir heads (make-specifier heads '|@INCLUDE| nil nil nil nil nil nil nil))
+	  (error (format nil "wrong inclusion ~S" def)))
+      (if (symbolp heads)
+	  (spec-inner ir heads (make-specifier heads '|@INCLUDE| nil nil nil nil nil nil nil))
+	(error (format nil "wrong inclusion ~S" def))))))
 
 (defun specify-import (def attrs lvl ir)
   (when (> (length attrs) 0) (error (format nil "wrong import attributes ~A" attrs)))
@@ -389,9 +390,9 @@
       (when (zerop (mod i 2))
 	(when (key-eq (nth i args) ':|as|)
 	  (setq abbr (nth (+ i 1) args)))))
-    (if (every #'symbolp heads)
+    (if (and (or (stringp (car (last heads))) (symbolp (car (last heads)))) (every #'symbolp (butlast heads)))
 	(spec-inner ir abbr (make-specifier abbr '|@IMPORT| nil nil nil nil nil heads nil))
-      (error "wrong importing"))))
+      (error (format nil "wrong import ~S" def)))))
 
 (defun specify-typedef (def attrs lvl ir)
   (when (> (length attrs) 0) (error (format nil "wrong attributes ~A" attrs)))
@@ -440,7 +441,7 @@
 		  (let ((reader-specifier (make-specifier custom '|@FUNCTION| (if (null modifier) nil (user-symbol "const"))
 							  type modifier nil nil nil nil)))
 		    (spec-method ir custom reader-specifier)
-		    (setf (body reader-specifier) (user-symbol (format nil "((return (-> this ~A)))" variable))))))
+		    (setf (slot-value reader-specifier 'body) (user-symbol (format nil "((return (-> this ~A)))" variable))))))
 	      (when (key-eq (nth i args) ':|writer|)
 		(let ((custom (specify-name< (nth (+ i 1) args))))
 		  (unless (null array)
@@ -454,7 +455,8 @@
 		    (spec-param writer-specifier param-name
 			       (make-specifier param-name '|@PARAMETER| (if (null modifier) nil (user-symbol "const"))
 					       type modifier nil nil nil nil))
-		    (setf (body writer-specifier) (user-symbol (format nil "((set (-> this ~A) ~A))" variable param-name))))))
+		    (setf (slot-value writer-specifier 'body)
+			  (user-symbol (format nil "((set (-> this ~A) ~A))" variable param-name))))))
 	      )))))))
 
 (defun specify-function (def attrs lvl ir &optional methodof &key (method-type :method))
@@ -507,17 +509,20 @@
       (unless (null methodof)
 	      (when (eql method-type :ctor) (setf (default function-specifier) :ctor))
 	      (when (eql method-type :dtor) (setf (default function-specifier) :dtor)))
-      (setf (body function-specifier) body)
+      (setf (slot-value function-specifier 'body) body)
       (dolist (param params)
-	(let ((is-anonymous nil))
-	  (multiple-value-bind (const type modifier const-ptr variable array default)
-	    (specify-type-value< param ir)
-	    (when (null variable)
-	      (setq is-anonymous t)
-	      (setq variable (gensym "lcc#PARAM")))
-	    (spec-param function-specifier variable
-		       (make-specifier variable '@|PARAMETER| const type modifier
-				       const-ptr array default nil is-anonymous))))))))
+        (if (equal param (list (user-symbol "***")))
+	    (spec-param function-specifier (user-symbol "***")
+			  (make-specifier (user-symbol "***") '@|PARAMETER| nil nil nil nil nil nil nil))
+	  (let ((is-anonymous nil))
+	    (multiple-value-bind (const type modifier const-ptr variable array default)
+	      (specify-type-value< param ir)
+	      (when (null variable)
+		(setq is-anonymous t)
+		(setq variable (gensym "lcc#PARAM")))
+	      (spec-param function-specifier variable
+			  (make-specifier variable '@|PARAMETER| const type modifier
+					  const-ptr array default nil is-anonymous)))))))))
 
 (defun specify-enum (def attrs lvl ir)
   (when (> (length attrs) 0) (error (format nil "wrong attributes ~A" attrs)))
