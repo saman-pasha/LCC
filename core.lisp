@@ -2,9 +2,10 @@
 
 (defvar *output* t)
 
-(defvar *unaries* '(|+| |-| |++| |++#| |--| |--#| |~| |not| |contentof| |addressof|))
+(defvar *pre-unaries* '(|+| |-| |++| |--| |~| |not| |cof| |contentof| |aof| |addressof|))
+(defvar *post-unaries* '(|++#| |--#|))
 (defvar *operators* '(|+| |-| |*| |/| |%| |==| |!=| |>| |<| |>=| |<=| |^| |xor| |<<| |>>|
-		      |and| |or| |bitand| |bitor| |->| |$|))
+		      |and| |or| |bitand| |bitor|))
 (defvar *assignments* '(|+=| |-=| |*=| |/=| |%=| |<<=| |>>=|))
 (defvar *modifiers* '(|*| |**|))
 
@@ -119,10 +120,59 @@
   (let ((spec (load-specifier (read-meta-file path))))
     (case (construct spec)
       ('|@TARGET| (import-spec spec globals))
+      ('|@META|   t)
       ('|@CLASS|  t)
       (otherwise (error (format nil "invalid meta file root speficier ~A in file "
 				(construct spec) path))))
     spec))
+
+(defun import-recursive (cwd spec globals)
+  (let ((all-deps (make-hash-table :test 'equal)))
+    (labels ((aad (this-spec)
+	       (maphash #'(lambda (in-name in-spec)
+			    (unless (listp in-spec)
+			      (case (construct in-spec)
+				('|@INCLUDE| (let ((file-name (format nil "~A~A~A.m"
+								      cwd
+								      (include-path< (name in-spec))
+								      (extract-include-name< (name in-spec)))))
+					       (display file-name)
+					       (when (probe-file file-name)
+						 (import-meta-file file-name globals)
+						 (aad (load-specifier (read-meta-file file-name))))))
+				('|@IMPORT|  (let ((file-name (format nil "~A~A/~A.m"
+								      cwd
+								      (class-path< (default in-spec))
+								      (extract-class-name< (default in-spec)))))
+					       (display file-name)
+					       (when (probe-file file-name)
+						 (import-meta-file file-name globals)
+						 (let ((deps-spec (load-specifier (read-meta-file file-name))))
+						   (aad deps-spec)
+						   (setf (gethash in-name globals) deps-spec)))))
+				(otherwise nil))))
+		        (slot-value this-spec 'inners))))
+      (aad spec))
+    all-deps))
+
+(defun all-dependencies (cwd spec)
+  (let ((all-deps (make-hash-table :test 'equal)))
+    (labels ((aad (this-spec)
+	       (maphash #'(lambda (in-name in-spec)
+			    (when (and (not (listp in-spec)) (eql (construct in-spec) '|@IMPORT|))
+			      (let ((deps-spec (load-specifier
+						   (read-meta-file
+						       (format nil "~A~A/~A.m"
+							       cwd
+							       (class-path< (default in-spec))
+							       (extract-class-name< (default in-spec)))))))
+				(multiple-value-bind (-p -l)
+				  (class-path-lib< (default deps-spec))
+				  (setf (gethash -l all-deps) -p))
+				(aad deps-spec))))
+		        (slot-value this-spec 'inners))))
+      (aad spec))
+    all-deps))
 
 (defun indent (lvl)
   (make-string (* lvl 2) :initial-element #\Space))
@@ -218,6 +268,10 @@
       (format nil "__~{~A~^_~}__" full-name)
     (format nil "__~A__" full-name)))
 
+(defun operator-c-name< (name)
+  (let ((stl (mapcar #'char-code (coerce (symbol-name name) 'list))))
+    (format nil "__opr_~{~A~^_~}__" stl)))
+
 (defun method-name< (full-name method-name)
   (if (listp full-name)
       (format nil "__~{~A~^_~}_~A__" full-name method-name)
@@ -258,6 +312,7 @@
 (defun unsigned-long-p (sym)
   (when (symbolp sym)
     (let ((str (coerce (symbol-name sym) 'list)))
-      (and (every #'digit-char-p (butlast (butlast str)))
-	(eq (car (subseq (reverse str) 1 2)) #\U)
-	(eq (car (last str)) #\L)))))
+      (when (> (length str) 1)
+	(and (every #'digit-char-p (butlast (butlast str)))
+	  (eq (car (subseq (reverse str) 1 2)) #\U)
+	  (eq (car (last str)) #\L))))))

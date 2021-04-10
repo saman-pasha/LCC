@@ -50,6 +50,7 @@
    (1 . for)
    (1 . for-each)
    (1 . new)
+   (1 . delete)
    (1 . printf)
    (1 . scanf)
    (1 . override)
@@ -156,6 +157,8 @@
    (1 . true)
    (1 . false)
    (1 . nil)
+   (1 . size_t)
+   (1 . nullptr_t)
    ))
 
 (font-lock-add-keywords
