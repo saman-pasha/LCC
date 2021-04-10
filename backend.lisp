@@ -114,7 +114,7 @@
     (cond ((key-eq form '|nil|) (format nil "NULL"))
 	  ((numberp form)       (format nil "~A" form))
 	  ((characterp form) (if (eql form #\Null) (format nil "'\\0'" form) (format nil "'~C'" form)))
-	  ((stringp form)       (format nil "~S" form))
+	  ((stringp form)       (format nil "\"~A\"" form))
 	  ((listp form)
 	   (let ((func (car form))
 		 (args (slot-value expr 'body)))

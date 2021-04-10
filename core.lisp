@@ -44,6 +44,25 @@
 
 (defmacro with-lcc-readtable (&rest code)
   `(let ((*readtable* (copy-readtable)))
+     (set-macro-character
+	 #\{ #'(lambda (stream char)
+		 (declare (ignore char))
+		 (read-delimited-list #\} stream t)))
+     (set-macro-character #\} (get-macro-character #\)) nil)
+     (set-macro-character
+	 #\[ #'(lambda (stream char)
+		 (declare (ignore char))
+		 (list '[ (car (read-delimited-list #\] stream t)) '])))
+     (set-macro-character #\] (get-macro-character #\)) nil)
+     (set-macro-character
+	 #\" #'(lambda (stream char)
+		 (declare (ignore char))
+		 (with-output-to-string (out)
+					(do ((char (read-char stream nil nil) (read-char stream nil nil)))
+					    ((char= char #\") nil)
+					    (if (char= char #\\)
+						(write #\\ :stream out :escape nil)
+					      (write char :stream out :escape nil))))))
      (set-dispatch-macro-character
 	 #\# #\t #'(lambda (stream char1 char2)
 		     (declare (ignore stream char1 char2))
@@ -52,18 +71,6 @@
 	 #\# #\f #'(lambda (stream char1 char2)
 		     (declare (ignore stream char1 char2))
 		     (read-from-string "false")))
-     (set-macro-character
-	 #\{ #'(lambda (stream char)
-		 (declare (ignore char))
-		 (read-delimited-list #\} stream t)))
-     (set-macro-character #\} (get-macro-character #\)) nil)
-     (set-macro-character
-	 #\" #'(lambda (stream char)
-		 (declare (ignore char))
-		 (with-output-to-string (out)
-					(do ((char (read-char stream nil nil) (read-char stream nil nil)))
-					    ((char= char #\") nil)
-					    (write char :stream out :escape nil)))))
      (set-macro-character #\| nil nil)
      (setf (readtable-case *readtable*) :preserve)
      ,@code))
@@ -203,13 +210,6 @@
 
 (defun is-array (desc)
   (when (and (listp desc) (key-eq (first desc) '[) (key-eq (car (last desc)) '])) t))
-
-(set-macro-character
- #\[ #'(lambda (stream char)
-	 (declare (ignore char))
-	 (list '[ (car (read-delimited-list #\] stream t)) '])))
-
-(set-macro-character #\] (get-macro-character #\)) nil)
 
 (defmacro filter (&rest rest)
   `(remove-if-not ,@rest))
