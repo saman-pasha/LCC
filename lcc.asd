@@ -1,5 +1,5 @@
 (defsystem "lcc"
-  :version "0.0.4"
+  :version "0.0.5"
   :author  "Saman H. Pasha"
   :license "MIT License"
   :depends-on ()
