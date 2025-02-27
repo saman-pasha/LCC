@@ -3,5 +3,5 @@
 (defpackage :lcc
   (:use :cl)
   (:export
-      :compile-ast
-      :compile-lcc-file))
+   :compile-ast
+   :compile-lcc-file))

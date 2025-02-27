@@ -511,4 +511,4 @@
 
 	              (set (-> context Message_Block_Index) 0))
 
-        )				; target "sha.c"
+        ) ; target "sha.c"

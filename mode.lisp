@@ -96,7 +96,8 @@
  
 (lcc-add-types
  'font-lock-type-face
- '((1 . void)
+ '((1 . this)
+   (1 . void)
    (1 . unsigned)
    (1 . char)
    (1 . uchar)

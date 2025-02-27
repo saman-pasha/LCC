@@ -2,7 +2,7 @@
 Lisp C Compiler, Lisp-like syntax for writing C code in addition of some forms and pointer managements.
 ## Instruction
 * Install [SBCL](www.sbcl.org).
-* lcc as default uses [Libtool](https://www.gnu.org/software/libtool) for compiling and linking `C` code. If you like it just install it for your platform and put it in the `PATH` environment variable. Compiler and linker could be set in `lcc-config.lisp` file.
+* lcc uses [Libtool](https://www.gnu.org/software/libtool) as default for compiling and linking `C` code. Install it for your platform and put it in the `PATH` environment variable. Compiler and linker could be set in `config.lisp` file.
 * Download and copy lcc folder to `~/common-lisp` for enabling [ASDF](https://common-lisp.net/project/asdf) access to lcc package.
 * Write your own lcc code and save it in `.lcc` or `.lisp` extension.
 * Copy `lcc.lisp` file from source folder into your project path.
@@ -317,7 +317,7 @@ All features could be omitted or if available accept `#t` for default behaviour 
 #include <stdbool.h>
 ```
 * <b>:compile</b>: used for compiling target file. Dafault behaviour is `-c target.c`. Could be a list of arguments that will send to compiler which has been set in `lcc-config.lisp`.
-* <b>:link</b>: used for linking and builing target file as library or executable. It has not dfault behaviour. Could be a list of arguments that will send to linker which has been set in `lcc-config.lisp`.
+* <b>:link</b>: used for linking and builing target file as library or executable. It has not default behaviour. Could be a list of arguments that will send to linker which has been set in `lcc-config.lisp`.
 ```lisp
 ;; MyMath library declaration
 (target "mymath.h"
